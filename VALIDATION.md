@@ -43,3 +43,18 @@ are verified through Home Assistant's real test framework with mocked remote
 responses. Polling provides snapshot change notifications, not guaranteed delivery
 of every intermediate app edit. Google popup sign-in is not implemented; use a
 password method linked to the existing account. No Flutter builds were produced.
+
+## External list synchronization requests (0.2.0)
+
+Runtime commit `961b791` passed [Linux run 39148980874](https://github.com/agawlbb/home-assistant-coffey-table-recipes/actions/runs/39148980874):
+10 client tests and 9 real HA lifecycle tests. The new checks deliver multiple
+requests without item changes, verify the separate event entity and bus payloads,
+persist the request cursor without reloading on each event, suppress repeats
+after polling/reload, and baseline existing history on initial connection.
+
+The Flutter source passed 11 focused widget checks and source analysis, including
+once-per-opening requests and nonblocking failures. App commit `51221f5` is source
+only; no app build or hosted Flutter deployment was requested or produced.
+The PHP request-journal fixtures passed persistence, household isolation, ordered
+IDs, non-mutating reads and the 128-request retention bound. Delivery of a real
+app-open event through an installed HA instance remains unverified.
