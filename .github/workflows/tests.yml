@@ -12,4 +12,6 @@ jobs:
           python-version: '3.13'
       - run: pip install -r requirements-test.txt
       - run: python -m unittest discover -s tests -p test_api.py -v
-      - run: pytest tests/test_integration.py -v
+      - run: python -m unittest discover -s tests -p test_keep_engine.py -v
+      - run: python -m unittest discover -s tests -p test_keep_adapter.py -v
+      - run: pytest tests/test_integration.py tests/test_keep_native.py -v

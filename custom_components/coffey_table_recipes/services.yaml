@@ -1,0 +1,10 @@
+sync_google_keep:
+  name: Synchronize Google Keep
+  description: Fetch fresh Google Keep data and reconcile it with the household shopping list.
+  fields:
+    config_entry_id:
+      name: Household integration
+      description: Required when more than one CTR household has Keep synchronization enabled.
+      selector:
+        config_entry:
+          integration: coffey_table_recipes

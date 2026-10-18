@@ -3,9 +3,12 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import entity_registry as er, selector
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig, SelectSelectorMode, TextSelector, TextSelectorConfig, TextSelectorType
 from .api import ApiError, Client
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .keep_sync import CONF_KEEP_LIST, CONF_KEEP_TARGET, resolve_keep_selection
+from .keep_engine import SyncBlocked
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -88,9 +91,22 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class OptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
+        errors = {}
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            options = {"scan_interval": user_input["scan_interval"]}
+            entity_id = user_input.get(CONF_KEEP_LIST)
+            try:
+                if entity_id:
+                    options[CONF_KEEP_TARGET] = resolve_keep_selection(self.hass, entity_id, self.config_entry.entry_id)
+                    options[CONF_KEEP_LIST] = entity_id
+                return self.async_create_entry(title="", data=options)
+            except SyncBlocked:
+                errors[CONF_KEEP_LIST] = "invalid_keep_list"
+        target = self.config_entry.options.get(CONF_KEEP_TARGET)
+        selected = er.async_get(self.hass).async_get_entity_id("todo", "google_keep_sync", target["keep_unique"]) if target else None
         return self.async_show_form(step_id="init", data_schema=vol.Schema({
             vol.Required("scan_interval", default=self.config_entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL)):
-                vol.All(vol.Coerce(int), vol.Range(min=5, max=300))
-        }))
+                vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
+            vol.Optional(CONF_KEEP_LIST, default=selected): vol.Any(None, selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="todo", integration="google_keep_sync"))),
+        }), errors=errors)

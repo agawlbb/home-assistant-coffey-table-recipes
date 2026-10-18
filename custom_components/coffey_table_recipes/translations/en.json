@@ -29,8 +29,9 @@
   "options": {
     "step": {"init": {
       "title": "Shopping list settings",
-      "description": "Choose how often to check for changes made in the app (5–300 seconds). Home Assistant edits update immediately. Changes between checks may be combined into one event.",
-      "data": {"scan_interval": "Refresh interval (seconds)"}
-    }}
+      "description": "Check CTR every 5–300 seconds. Optionally select a Google Keep Sync to-do list to synchronize additions, renames, checkmarks and deletions in both directions. Google authentication stays in Google Keep Sync. Keep is checked every 60 seconds and immediately for CTR requests and HA edits. Clear the selection to stop synchronization.",
+      "data": {"scan_interval": "CTR refresh interval (seconds)", "google_keep_list": "Google Keep Sync list (optional)"}
+    }},
+    "error": {"invalid_keep_list": "Choose an enabled Google Keep Sync list that is not already connected to another household. Check that the list is selected in Google Keep Sync."}
   }
 }

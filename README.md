@@ -82,9 +82,9 @@ Opening Shopping list in the app requests synchronization with an external list,
 even if the shopping items have not changed. Use the **Shopping list
 synchronization** event entity's `requested` event, or the bus event
 `coffey_table_recipes_shopping_list_sync_requested`, to trigger your external-list
-automation. Payloads contain `household_id`, `config_entry_id`, `request_id`,
+automation, or enable the built-in Google Keep synchronization below. Payloads contain `household_id`, `config_entry_id`, `request_id`,
 `requested_at`, and `reason` (`shopping_list_opened`). The automation performs the
-actual synchronization; receiving the event does not mean the lists are in sync.
+actual synchronization when no built-in Keep list is selected; receiving the event does not mean the lists are in sync.
 
 Requests arrive on the next integration poll (15 seconds by default). Background
 app refreshes and ordinary item edits do not request synchronization. The app
@@ -101,6 +101,67 @@ Concurrent edits reload the newest list and retry rejected revision conflicts
 up to three times. Network failures are not automatically replayed, preventing
 duplicate additions after an uncertain response. Refresh before retrying a
 failed add. Offline lists become unavailable; edits require a connection.
+
+## Development
+
+## Optional Google Keep synchronization
+
+Install and sign into **Google Keep Sync** (`google_keep_sync`) first and select
+the Keep lists it should expose. In **Settings → Devices & services →
+CoffeyTableRecipes → Configure**, choose the optional **Google Keep Sync list**.
+Clear this field to disable syncing. CTR uses that integration's existing Google
+authentication; no Google credentials are copied or requested by CTR. One Keep
+list can belong to only one CTR household. Stored registry identities survive
+entity renames and prevent a different list being substituted silently.
+
+CTR and the selected Keep list synchronize additions, renames, checked/unchecked
+status and deletions in both directions. Duplicate items stay distinct. CTR
+departments and ordering remain under CTR's control. The first synchronization
+merges both lists without treating unpaired items as deletions. Later deletions
+propagate only when the counterpart has not been edited concurrently. Independent
+field edits merge; CTR wins simultaneous conflicts on the same field. List order
+and blank Keep separator rows are not synchronized.
+
+Opening CTR's shopping list generates its existing household request. CTR handles
+the resulting `coffey_table_recipes_shopping_list_sync_requested` event internally,
+filtered by its `config_entry_id`, and immediately starts a fresh reconciliation.
+CTR change events and HA `todo` edits targeting the selected Keep entity also
+trigger it. Direct Keep-app changes are checked every **60 seconds**. CTR's own
+polling interval is unchanged. In-flight explicit requests coalesce, and own CTR
+writes do not create a sync loop.
+
+Google Keep Sync 1.1.0's `request_sync` action has a 55-second cooldown and its
+coordinator may return cached data after a failed refresh. CTR instead calls
+`api.fetch_all_lists()`: errors propagate and successful reads provide fresh
+evidence. Each write is read back before the persistent item ledger advances.
+An offline, missing, deselected or trashed list stops syncing; it never means
+"delete all items". An uncertain add is recovered from fresh reads and never
+blindly repeated. Ambiguous/missing additions require manual reconciliation.
+
+The **Google Keep synchronization** sensor on the CTR household device reports
+`disabled`, `syncing`, `synced`, or `not_confirmed`, with `last_success`,
+`last_reason`, `last_error`, `changes`, `mapped_items` and migration information.
+`synced` requires fresh reads and complete verification of both lists. Last-success
+time and item mapping survive restarts. Run `coffey_table_recipes.sync_google_keep`
+for manual synchronization; specify `config_entry_id` when more than one household
+is enabled. Clearing the selection stops future writes without undoing edits.
+
+### Replacing the standalone bridge
+
+CTR detects a matching `ctr_keep_bridge` entry during setup, unloads/disables it
+before starting a new writer, imports its final mapping (including pending adds)
+through HA's `Store` API, and carries over its last-success time. Its previous
+store is retained for recovery. After verifying the native status and list
+contents, remove the old bridge entry and its `custom_components/ctr_keep_bridge`
+files. Google Keep Sync stays installed and signed in. A still-running old bridge
+blocks native writes. Changing Keep selections uses separate ledgers, so a prior
+list's mapping cannot be applied to a new list.
+
+Remote services cannot provide an atomic transaction across both lists. A narrow
+read/write race remains, phone uploads may be delayed by Google, and each run is
+bounded to 100 changes and 180 seconds. No sync is reported as confirmed after
+an authentication/network error. This adapter uses Google Keep Sync's internal
+1.1.0 API; future upstream API changes may require compatibility updates.
 
 ## Development
 
