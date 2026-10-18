@@ -84,6 +84,12 @@ async def migrate_legacy_bridge(hass, entry):
     selection = resolve_keep_selection(hass, entity_id, entry.entry_id)
     runtime = getattr(old, "runtime_data", None)
     last_success = getattr(runtime, "last_success", None)
+    # The old component depends on CTR. Awaiting its reload while CTR itself
+    # is setting up would create a dependency cycle. An already-disabled old
+    # entry is safe to import; otherwise the normal UI disable action must
+    # finish first. Loaded bridges can be stopped directly below.
+    if old.disabled_by is None and old.domain not in hass.config.components and runtime is None:
+        raise ConfigEntryNotReady("Disable the standalone Keep bridge before migrating its saved mapping")
     if old.state.value == "loaded" and not await hass.config_entries.async_unload(old.entry_id):
         raise ConfigEntryNotReady("Cannot stop the standalone Keep bridge")
     last_success = getattr(runtime, "last_success", last_success)

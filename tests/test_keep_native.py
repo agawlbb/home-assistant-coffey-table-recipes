@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
@@ -143,4 +144,17 @@ async def test_legacy_mapping_migrates_after_old_writer_stops(hass):
     # Clearing the optional list later must not silently re-enable migration.
     hass.config_entries.async_update_entry(native, options={})
     await migrate_legacy_bridge(hass, native)
+    assert native.options == {}
+
+
+async def test_boot_migration_never_waits_on_a_component_that_depends_on_ctr(hass):
+    register_keep(hass)
+    native = MockConfigEntry(domain=DOMAIN, data={"household_id":"1","token":"fixture"})
+    native.add_to_hass(hass)
+    old = MockConfigEntry(domain=LEGACY_DOMAIN, data={**TARGET,"ctr_entry":native.entry_id,"ctr_unique":"1_shopping_list"})
+    old.add_to_hass(hass)
+    with patch.object(hass.config_entries, "async_set_disabled_by") as disable:
+        with pytest.raises(ConfigEntryNotReady, match="Disable the standalone"):
+            await migrate_legacy_bridge(hass, native)
+        disable.assert_not_called()
     assert native.options == {}

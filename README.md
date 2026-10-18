@@ -146,7 +146,8 @@ is enabled. Clearing the selection stops future writes without undoing edits.
 
 ### Replacing the standalone bridge
 
-CTR detects a matching `ctr_keep_bridge` entry during setup, unloads/disables it
+Disable the standalone bridge before installing this update. CTR detects a
+matching `ctr_keep_bridge` entry during setup, unloads/disables it
 before starting a new writer, imports its final mapping (including pending adds)
 through HA's `Store` API, and carries over its last-success time. Its previous
 store is retained for recovery. After verifying the native status and list
@@ -156,7 +157,9 @@ fresh verified sync, removes the disabled old config entry through HA's normal
 API, and moves `custom_components/ctr_keep_bridge` into
 `coffey_table_recipes_recovery` for recovery. Google Keep Sync stays installed and signed in. A still-running old bridge
 blocks native writes. Changing Keep selections uses separate ledgers, so a prior
-list's mapping cannot be applied to a new list.
+list's mapping cannot be applied to a new list. If an enabled bridge is waiting
+on CTR during boot, CTR waits for you to disable that bridge instead of creating
+a circular startup dependency.
 
 Remote services cannot provide an atomic transaction across both lists. A narrow
 read/write race remains, phone uploads may be delayed by Google, and each run is
