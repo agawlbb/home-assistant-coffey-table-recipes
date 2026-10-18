@@ -52,7 +52,7 @@ async def pair(hass):
 async def test_native_requests_are_scoped_and_bypass_cooldown(hass, pair):
     entry, _, keep, _ = pair
     sync = entry.runtime_data.keep_sync
-    assert sync.status == "synced" and sync.last_success
+    assert sync.status == "synced" and sync.last_success, sync.last_error
     keep.api.fetch_all_lists.reset_mock()
     hass.bus.async_fire(EVENT_SYNC_REQUESTED, {"config_entry_id":"different"})
     await hass.async_block_till_done()
@@ -76,6 +76,7 @@ async def test_native_ctr_and_keep_edits_and_one_minute_poll(hass, pair):
         await hass.async_block_till_done()
         await sync.task
         assert sync.last_reason == reason
+        assert sync.status == "synced", sync.last_error
     async_fire_time_changed(hass, dt_util.utcnow()+timedelta(seconds=61))
     await hass.async_block_till_done()
     await sync.task
@@ -133,7 +134,7 @@ async def test_legacy_mapping_migrates_after_old_writer_stops(hass):
     await Store(hass,1,f"{LEGACY_DOMAIN}.{old.entry_id}").async_save(ledger)
     await migrate_legacy_bridge(hass, native)
     unload.assert_awaited_once()
-    assert old.disabled_by == ConfigEntryDisabler.INTEGRATION
+    assert old.disabled_by == ConfigEntryDisabler.USER
     saved = await sync_store(hass, native.entry_id, TARGET).async_load()
     assert saved["engine"] == ledger and saved["last_success"] == "2026-10-18T14:29:21-04:00"
     assert native.options[CONF_KEEP_TARGET] == TARGET

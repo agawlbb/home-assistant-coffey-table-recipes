@@ -6,6 +6,10 @@ fresh evidence, and read back every write before advancing our durable ledger.
 """
 import asyncio
 import hashlib
+import json
+from pathlib import Path
+import shutil
+from uuid import uuid4
 from datetime import timedelta
 import logging
 
@@ -84,7 +88,7 @@ async def migrate_legacy_bridge(hass, entry):
         raise ConfigEntryNotReady("Cannot stop the standalone Keep bridge")
     last_success = getattr(runtime, "last_success", last_success)
     # Retain its entry and Store for rollback until the user removes the bridge.
-    hass.config_entries.async_update_entry(old, disabled_by=ConfigEntryDisabler.INTEGRATION)
+    hass.config_entries.async_update_entry(old, disabled_by=ConfigEntryDisabler.USER)
     saved = await Store(hass, 1, f"{LEGACY_DOMAIN}.{old.entry_id}").async_load()
     if saved is None:
         raise ConfigEntryNotReady("Legacy item mapping is missing; refusing a fresh merge")
@@ -169,6 +173,52 @@ def async_register_keep_service(hass):
     hass.services.async_register(DOMAIN, "sync_google_keep", sync_service,
         schema=vol.Schema({vol.Optional("config_entry_id"): str}), supports_response=SupportsResponse.OPTIONAL)
 
+    async def retire_service(call):
+        entry_id = call.data["config_entry_id"]
+        entry = hass.config_entries.async_get_entry(entry_id)
+        sync = getattr(getattr(entry, "runtime_data", None), "keep_sync", None)
+        if entry is None or entry.domain != DOMAIN or sync is None or not sync.migrated_from:
+            raise HomeAssistantError("This household has no migrated bridge to retire")
+        result = await sync.sync("retire_verification")
+        if result["status"] != "synced":
+            raise HomeAssistantError("Verify native synchronization before removing the old bridge")
+        async with sync.lock:
+            old = hass.config_entries.async_get_entry(sync.migrated_from)
+            if old is not None:
+                if (old.domain != LEGACY_DOMAIN or old.data.get("ctr_entry") != entry.entry_id
+                        or old.data.get("keep_unique") != sync.selection["keep_unique"]
+                        or old.state.value == "loaded"):
+                    raise HomeAssistantError("The old bridge is active or its identity does not match")
+                if not await hass.config_entries.async_remove(old.entry_id):
+                    raise HomeAssistantError("The old bridge entry could not be removed")
+            archive = None
+            if not hass.config_entries.async_entries(LEGACY_DOMAIN):
+                archive = await hass.async_add_executor_job(_archive_legacy_files, hass.config.path())
+            return {"removed": True, "source_archive": archive}
+
+    hass.services.async_register(DOMAIN, "retire_keep_bridge", retire_service,
+        schema=vol.Schema({vol.Required("config_entry_id"): str}), supports_response=SupportsResponse.OPTIONAL)
+
+
+def _archive_legacy_files(config_path):
+    """Remove the obsolete installed component by moving it to a recovery folder."""
+    root = Path(config_path).resolve()
+    source = root / "custom_components" / LEGACY_DOMAIN
+    if not source.exists():
+        return None
+    if source.is_symlink() or source.resolve().parent != (root / "custom_components").resolve():
+        raise HomeAssistantError("Unexpected bridge source path; files were retained")
+    manifest = json.loads((source / "manifest.json").read_text())
+    if manifest.get("domain") != LEGACY_DOMAIN:
+        raise HomeAssistantError("Bridge manifest identity does not match; files were retained")
+    recovery = root / "coffey_table_recipes_recovery"
+    recovery.mkdir(exist_ok=True)
+    if recovery.is_symlink() or recovery.resolve().parent != root:
+        raise HomeAssistantError("Unexpected recovery path; files were retained")
+    destination = recovery / f"{LEGACY_DOMAIN}-{uuid4().hex}"
+    shutil.move(str(source), str(destination))
+    return str(destination)
+
 
 class KeepSync:
     def __init__(self, hass, entry, selection):
@@ -207,7 +257,9 @@ class KeepSync:
                 raise SyncBlocked("The standalone bridge is still active; sync stopped to avoid two writers")
         ctr_entry = self.hass.config_entries.async_get_entry(self.selection["ctr_entry"])
         keep_entry = self.hass.config_entries.async_get_entry(self.selection["keep_entry"])
-        if (not ctr_entry or not keep_entry or ctr_entry.state.value != "loaded"
+        # This adapter is started after CTR's entities/coordinator are ready but
+        # before HA necessarily finishes marking our own entry as loaded.
+        if (not ctr_entry or not keep_entry or ctr_entry.state.value not in ("loaded", "setup_in_progress")
                 or keep_entry.state.value != "loaded"):
             raise SyncBlocked("A shopping-list integration is not loaded")
         ctr = ctr_entry.runtime_data

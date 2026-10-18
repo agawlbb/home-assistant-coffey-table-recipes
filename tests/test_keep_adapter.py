@@ -133,6 +133,29 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(bridge.again)
         bridge.lock.release()
 
+    def test_retirement_preserves_source_in_recovery_folder(self):
+        import json
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory)/"custom_components/ctr_keep_bridge"
+            source.mkdir(parents=True)
+            (source/"manifest.json").write_text(json.dumps({"domain":"ctr_keep_bridge"}))
+            (source/"engine.py").write_text("# recovery source")
+            archive = module._archive_legacy_files(directory)
+            self.assertFalse(source.exists())
+            self.assertEqual((Path(archive)/"engine.py").read_text(), "# recovery source")
+
+    def test_retirement_refuses_wrong_component_identity(self):
+        import json
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory)/"custom_components/ctr_keep_bridge"
+            source.mkdir(parents=True)
+            (source/"manifest.json").write_text(json.dumps({"domain":"another_integration"}))
+            with self.assertRaises(HAError):
+                module._archive_legacy_files(directory)
+            self.assertTrue(source.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
