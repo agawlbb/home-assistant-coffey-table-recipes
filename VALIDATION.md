@@ -1,5 +1,37 @@
 # Validation — October 18, 2026
 
+## Native Google Keep synchronization (0.3.0)
+
+Runtime commit `3d92344` passed all 53 tests in
+[Linux CI run 39156956847](https://github.com/agawlbb/home-assistant-coffey-table-recipes/actions/runs/39156956847).
+Coverage includes the original reconciliation engine, duplicates, concurrent
+edits, uncertain additions, fresh-fetch errors, persistent mapping and success
+timestamps, event scoping, optional configuration, unloading, and migration.
+A regression test covers the legacy bridge's circular startup dependency;
+disable that bridge before installing the native migration.
+
+Installed and verified on Home Assistant 2026.10.2 with Google Keep Sync 1.1.0.
+The existing household selection and four item mappings migrated successfully.
+Both lists' original IDs, names, status, and CTR departments matched their
+pre-migration snapshots after all temporary test items were removed.
+
+Live temporary-item checks verified additions and deletions in both directions,
+Keep rename/check/uncheck delivery to CTR, and CTR check/uncheck delivery to Keep.
+A scoped shopping-list sync-request event completed with `last_reason=ctr_request`.
+The 60-second poll also completed with zero changes and no error. One CTR edit
+returned a save error without changing the item; subsequent check/uncheck and
+delete operations succeeded. No uncertain operation was automatically replayed.
+
+The native status sensor reports `synced`, four mapped items and a current
+last-success timestamp. The standalone config entry was removed only after a
+fresh successful reconciliation; its installed files and local source/tests
+were moved to recovery archives. A full HA backup and the legacy mapping store
+were retained. No existing automation, script, or stored dashboard references
+to the standalone bridge were found. CTR polling remains at its existing setting;
+Keep polling runs every 60 seconds. No Flutter builds were produced.
+
+The earlier sections below record validation at the time of each prior version.
+
 Runtime source: `3b6010611afc25a27fadf78d2cee19ea4d228eed`.
 All tests passed in [Linux CI run 39148209297](https://github.com/agawlbb/home-assistant-coffey-table-recipes/actions/runs/39148209297):
 
