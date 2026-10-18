@@ -82,6 +82,7 @@ async def migrate_legacy_bridge(hass, entry):
     last_success = getattr(runtime, "last_success", None)
     if old.state.value == "loaded" and not await hass.config_entries.async_unload(old.entry_id):
         raise ConfigEntryNotReady("Cannot stop the standalone Keep bridge")
+    last_success = getattr(runtime, "last_success", last_success)
     # Retain its entry and Store for rollback until the user removes the bridge.
     hass.config_entries.async_update_entry(old, disabled_by=ConfigEntryDisabler.INTEGRATION)
     saved = await Store(hass, 1, f"{LEGACY_DOMAIN}.{old.entry_id}").async_load()

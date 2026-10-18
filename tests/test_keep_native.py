@@ -5,7 +5,7 @@ from types import SimpleNamespace as NS
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from homeassistant.config_entries import ConfigEntryDisabler
+from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
@@ -23,8 +23,11 @@ TARGET = {"keep_entry":"keep", "keep_unique":"google_keep_sync.list.list", "keep
 
 def register_keep(hass):
     mock_integration(hass, MockModule(domain="google_keep_sync", async_setup_entry=AsyncMock(return_value=True), async_unload_entry=AsyncMock(return_value=True)))
-    keep_entry = MockConfigEntry(domain="google_keep_sync", entry_id="keep", data={"lists_to_sync":["list"]})
+    # The external custom integration is already loaded; its source is not part
+    # of this repository/test install. Exercise the real CTR lifecycle around it.
+    keep_entry = MockConfigEntry(domain="google_keep_sync", entry_id="keep", state=ConfigEntryState.LOADED, data={"lists_to_sync":["list"]})
     keep_entry.add_to_hass(hass)
+    hass.config.components.add("google_keep_sync")
     entity = er.async_get(hass).async_get_or_create("todo", "google_keep_sync", TARGET["keep_unique"], config_entry=keep_entry, suggested_object_id="keep_fixture")
     api = NS(fetch_all_lists=AsyncMock(return_value=[NS(id="list", items=[NS(id="k",text="Milk",checked=False)])]),
              async_create_todo_item=AsyncMock(), async_update_todo_item=AsyncMock(), async_delete_todo_item=AsyncMock())
@@ -88,6 +91,7 @@ async def test_failed_keep_read_never_mutates_ctr(hass, pair):
         result = await sync.sync("ctr_request")
     assert result["status"] == "not_confirmed"
     assert result["last_success"] == previous_success
+    keep.api.fetch_all_lists.assert_awaited()
     change.assert_not_called()
 
 
@@ -117,14 +121,12 @@ async def test_optional_selector_validates_identity_and_can_disable(hass, pair):
 
 async def test_legacy_mapping_migrates_after_old_writer_stops(hass):
     keep_entry, _, entity_id = register_keep(hass)
-    assert await hass.config_entries.async_setup(keep_entry.entry_id)
     native = MockConfigEntry(domain=DOMAIN, unique_id="1", data={"household_id":"1","token":"fixture"})
     native.add_to_hass(hass)
     unload = AsyncMock(return_value=True)
     mock_integration(hass, MockModule(domain=LEGACY_DOMAIN, async_setup_entry=AsyncMock(return_value=True), async_unload_entry=unload))
-    old = MockConfigEntry(domain=LEGACY_DOMAIN, data={**TARGET, "ctr_entry":native.entry_id,"ctr_unique":"1_shopping_list"})
+    old = MockConfigEntry(domain=LEGACY_DOMAIN, state=ConfigEntryState.LOADED, data={**TARGET, "ctr_entry":native.entry_id,"ctr_unique":"1_shopping_list"})
     old.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(old.entry_id)
     old.runtime_data = NS(last_success="2026-10-18T14:29:21-04:00")
     ledger = {"rows":[{"left":"c","right":"k","base":{"summary":"Milk","status":"needs_action"},
                         "pending":{"side":"right","before":["k"],"desired":{"summary":"Eggs","status":"needs_action"}}}]}

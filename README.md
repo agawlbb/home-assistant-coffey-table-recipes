@@ -102,8 +102,6 @@ up to three times. Network failures are not automatically replayed, preventing
 duplicate additions after an uncertain response. Refresh before retrying a
 failed add. Offline lists become unavailable; edits require a connection.
 
-## Development
-
 ## Optional Google Keep synchronization
 
 Install and sign into **Google Keep Sync** (`google_keep_sync`) first and select
