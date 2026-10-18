@@ -54,6 +54,14 @@ class Client:
             if (not isinstance(item, dict) or not all(isinstance(item.get(key), str) for key in ("id", "name", "department"))
                     or not isinstance(item.get("checked"), bool)):
                 raise ApiError()
+        journal = result.get("sync_requests", {"latest_id": 0, "requests": []})
+        if (not isinstance(journal, dict) or not isinstance(journal.get("latest_id"), int)
+                or not isinstance(journal.get("requests"), list)):
+            raise ApiError()
+        for request in journal["requests"]:
+            if (not isinstance(request, dict) or not isinstance(request.get("id"), int)
+                    or not isinstance(request.get("requested_at"), str) or request.get("reason") != "shopping_list_opened"):
+                raise ApiError()
         return result
 
     async def revoke(self):

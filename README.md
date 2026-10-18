@@ -76,6 +76,27 @@ Changes between polls are coalesced; this is snapshot synchronization, not a
 durable event log, and transient changes between polls may not be observed.
 Revision-only or department/order changes also emit a change event.
 
+### External list synchronization requests
+
+Opening Shopping list in the app requests synchronization with an external list,
+even if the shopping items have not changed. Use the **Shopping list
+synchronization** event entity's `requested` event, or the bus event
+`coffey_table_recipes_shopping_list_sync_requested`, to trigger your external-list
+automation. Payloads contain `household_id`, `config_entry_id`, `request_id`,
+`requested_at`, and `reason` (`shopping_list_opened`). The automation performs the
+actual synchronization; receiving the event does not mean the lists are in sync.
+
+Requests arrive on the next integration poll (15 seconds by default). Background
+app refreshes and ordinary item edits do not request synchronization. The app
+must be online and running a version containing this feature. Request failures
+do not prevent viewing the shopping list and are not replayed automatically.
+
+The server retains the latest 128 requests per household. HA remembers its last
+request ID across reloads/restarts and emits each retained unseen request once
+during normal operation. The first connection establishes a baseline without
+replaying old requests. This is a bounded journal, not guaranteed delivery;
+requests beyond retention or interruptions during event processing may be lost.
+
 Concurrent edits reload the newest list and retry rejected revision conflicts
 up to three times. Network failures are not automatically replayed, preventing
 duplicate additions after an uncertain response. Refresh before retrying a

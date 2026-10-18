@@ -7,7 +7,7 @@ from homeassistant.components.todo import TodoItem, TodoItemStatus
 from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.coffey_table_recipes.api import ApiError
-from custom_components.coffey_table_recipes.const import DOMAIN, EVENT_CHANGED
+from custom_components.coffey_table_recipes.const import DOMAIN, EVENT_CHANGED, EVENT_SYNC_REQUESTED
 
 pytestmark = pytest.mark.asyncio
 STATE = {"revision": 1, "items": [
@@ -114,3 +114,45 @@ async def test_reauth_preserves_household(hass):
         result = await hass.config_entries.flow.async_init(DOMAIN, context={"source":"reauth", "entry_id":config.entry_id}, data=config.data)
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"email":"other@example.com", "password":"valid"})
         assert result["errors"]["base"] == "no_household"
+
+
+async def test_sync_requests_are_separate_persistent_and_not_repeated(hass):
+    config = await setup(hass)
+    coordinator = config.runtime_data
+    sync_events, list_events = [], []
+    unsub_sync = hass.bus.async_listen(EVENT_SYNC_REQUESTED, sync_events.append)
+    unsub_list = hass.bus.async_listen(EVENT_CHANGED, list_events.append)
+    state = deepcopy(STATE)
+    state["sync_requests"] = {"latest_id":2, "requests":[
+        {"id":i,"requested_at":"2026-10-18T17:00:00+00:00","reason":"shopping_list_opened"} for i in (1,2)
+    ]}
+    coordinator.async_set_updated_data(coordinator.accept(state))
+    await hass.async_block_till_done()
+    assert [event.data["request_id"] for event in sync_events] == [1,2]
+    assert list_events == []
+    assert config.data["sync_request_cursor"] == 2
+    event = next(e for e in hass.states.async_all("event") if e.attributes.get("event_type") == "requested")
+    assert event.attributes["request_id"] == 2
+    coordinator.async_set_updated_data(coordinator.accept(deepcopy(state)))
+    await hass.async_block_till_done()
+    assert len(sync_events) == 2
+    with patch("custom_components.coffey_table_recipes.api.Client.read", return_value=state):
+        await hass.config_entries.async_reload(config.entry_id)
+        await hass.async_block_till_done()
+    assert len(sync_events) == 2
+    unsub_sync(); unsub_list()
+
+
+async def test_initial_sync_history_is_not_replayed(hass):
+    config = entry(); config.add_to_hass(hass)
+    state = deepcopy(STATE)
+    state["sync_requests"] = {"latest_id":4,"requests":[
+        {"id":4,"requested_at":"2026-10-18T17:00:00+00:00","reason":"shopping_list_opened"}
+    ]}
+    events = []
+    unsubscribe = hass.bus.async_listen(EVENT_SYNC_REQUESTED, events.append)
+    with patch("custom_components.coffey_table_recipes.api.Client.read", return_value=state):
+        assert await hass.config_entries.async_setup(config.entry_id)
+        await hass.async_block_till_done()
+    assert events == [] and config.data["sync_request_cursor"] == 4
+    unsubscribe()

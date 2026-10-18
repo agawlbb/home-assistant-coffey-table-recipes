@@ -7,7 +7,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .api import ApiError, Client
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, EVENT_CHANGED
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, EVENT_CHANGED, EVENT_SYNC_REQUESTED
 
 PLATFORMS = [Platform.TODO, Platform.EVENT]
 _LOGGER = logging.getLogger(__name__)
@@ -18,13 +18,33 @@ class ShoppingCoordinator(DataUpdateCoordinator):
         super().__init__(hass, _LOGGER, name=DOMAIN, config_entry=entry,
                          update_interval=timedelta(seconds=entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL)))
         self.entry = entry
+        self.options = dict(entry.options)
         self.client = Client(async_get_clientsession(hass), entry.data["token"])
         self.last_event = None
+        self.last_sync_requests = []
         self._snapshot_lock = asyncio.Lock()
 
     def accept(self, state):
         previous = self.data
-        if previous is not None and state != previous:
+        journal = state.get("sync_requests", {"latest_id": 0, "requests": []})
+        cursor = self.entry.data.get("sync_request_cursor")
+        self.last_sync_requests = []
+        if cursor is not None:
+            for request in journal["requests"]:
+                if request["id"] > cursor:
+                    payload = {
+                        "household_id": self.entry.data["household_id"],
+                        "config_entry_id": self.entry.entry_id,
+                        "request_id": request["id"], "requested_at": request["requested_at"],
+                        "reason": request["reason"],
+                    }
+                    self.last_sync_requests.append(payload)
+                    self.hass.bus.async_fire(EVENT_SYNC_REQUESTED, payload)
+        if cursor != journal["latest_id"]:
+            self.hass.config_entries.async_update_entry(self.entry, data={
+                **self.entry.data, "sync_request_cursor": journal["latest_id"],
+            })
+        if previous is not None and any(state[key] != previous[key] for key in ("revision", "items", "departments")):
             before = {item["id"]: item for item in previous["items"]}
             after = {item["id"]: item for item in state["items"]}
             payload = {"household_id": self.entry.data["household_id"], "config_entry_id": self.entry.entry_id,
@@ -62,7 +82,8 @@ async def async_setup_entry(hass, entry):
 
 
 async def _options_updated(hass, entry):
-    await hass.config_entries.async_reload(entry.entry_id)
+    if entry.runtime_data.options != dict(entry.options):
+        await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass, entry):
