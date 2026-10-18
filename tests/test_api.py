@@ -100,6 +100,32 @@ class ClientTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             await client.mutate("invalid")
 
+    async def test_transport_preserves_status_without_response_data(self):
+        class Response:
+            status = 401
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): return False
+            async def json(self): raise AssertionError("Error body must not be read or logged")
+        class Session:
+            def request(self, *args, **kwargs):
+                self.kwargs = kwargs
+                return Response()
+        session = Session()
+        client = api.Client(session, "private-fixture-token")
+        with self.assertRaises(api.ApiError) as error:
+            await client.request("GET", "/home-assistant/shopping-list")
+        self.assertEqual(error.exception.status, 401)
+        self.assertNotIn("private-fixture-token", str(error.exception))
+        self.assertEqual(session.kwargs["headers"]["Authorization"], "Bearer private-fixture-token")
+        self.assertFalse(session.kwargs["allow_redirects"])
+
+    async def test_rejects_invalid_server_snapshot(self):
+        client = api.Client(None)
+        for state in ({}, {"revision":1,"items":[{}],"departments":[]}):
+            client.request = AsyncMock(return_value=state)
+            with self.assertRaises(api.ApiError):
+                await client.read()
+
 
 if __name__ == "__main__":
     unittest.main()

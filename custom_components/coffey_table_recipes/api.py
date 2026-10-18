@@ -22,7 +22,10 @@ class Client:
             async with self.session.request(method, url, timeout=aiohttp.ClientTimeout(total=20), allow_redirects=False, **kwargs) as response:
                 if response.status >= 300:
                     raise ApiError(response.status)
-                return await response.json()
+                result = await response.json()
+                if not isinstance(result, dict):
+                    raise ApiError()
+                return result
         except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as err:
             raise ApiError() from err
 
@@ -43,7 +46,15 @@ class Client:
         return await self.request("POST", f"/households/{household}/home-assistant-connections", token=identity, body={})
 
     async def read(self):
-        return await self.request("GET", "/home-assistant/shopping-list")
+        result = await self.request("GET", "/home-assistant/shopping-list")
+        if (not isinstance(result.get("revision"), int) or not isinstance(result.get("items"), list)
+                or not isinstance(result.get("departments"), list)):
+            raise ApiError()
+        for item in result["items"]:
+            if (not isinstance(item, dict) or not all(isinstance(item.get(key), str) for key in ("id", "name", "department"))
+                    or not isinstance(item.get("checked"), bool)):
+                raise ApiError()
+        return result
 
     async def revoke(self):
         return await self.request("DELETE", "/home-assistant/connection")
