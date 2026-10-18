@@ -12,8 +12,8 @@ Requires Home Assistant 2025.12 or later and internet access to coffeybean.com
 and Google's Firebase Authentication service. This is a custom integration,
 not an official Home Assistant Core integration.
 
-After this repository is published, add its GitHub URL to **HACS → Custom
-repositories**, choose **Integration**, and download CoffeyTableRecipes.
+Add [this repository](https://github.com/agawlbb/home-assistant-coffey-table-recipes)
+to **HACS → Custom repositories**, choose **Integration**, and download CoffeyTableRecipes.
 Alternatively copy `custom_components/coffey_table_recipes` into your Home
 Assistant `config/custom_components` folder. Restart Home Assistant.
 
@@ -83,7 +83,7 @@ failed add. Offline lists become unavailable; edits require a connection.
 
 ## Development
 
-Run `python -m unittest discover -s tests -v` for the isolated client tests.
+Run `python -m unittest discover -s tests -p test_api.py -v` for the isolated client tests.
 Full HA integration tests are configured in CI on Linux with the supported HA
 test package. See `VALIDATION.md` for what has actually been verified.
 No app builds or private Firebase configuration belong in this repository.
