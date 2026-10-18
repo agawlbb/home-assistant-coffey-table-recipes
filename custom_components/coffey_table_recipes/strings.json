@@ -1,0 +1,36 @@
+{
+  "title": "CoffeyTableRecipes",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect your household",
+        "description": "Sign in with a CoffeyTableRecipes household owner or administrator account. Your password is used once and never saved. Google-only accounts must first add an email/password sign-in method to their existing account.",
+        "data": {"email": "Email", "password": "Password"}
+      },
+      "household": {
+        "title": "Choose your household",
+        "description": "Everyone in this household shares this connection and shopping list.",
+        "data": {"household_id": "Household"}
+      }
+    },
+    "error": {
+      "invalid_auth": "Sign-in failed. Check your email and password.",
+      "cannot_connect": "Cannot connect to CoffeyTableRecipes. Try again shortly.",
+      "no_household": "This account must be an owner or administrator of a household. Set up your household in CoffeyTableRecipes first. When reconnecting, use an administrator of the original household."
+    },
+    "abort": {
+      "already_configured": "This household is already connected.",
+      "unknown_household": "Choose one of your households.",
+      "sign_in_again": "Authorization expired or was denied. Start setup again.",
+      "cannot_connect": "Cannot connect to CoffeyTableRecipes. Please start setup again shortly.",
+      "reauth_successful": "Your household has been reconnected."
+    }
+  },
+  "options": {
+    "step": {"init": {
+      "title": "Shopping list settings",
+      "description": "Choose how often to check for changes made in the app (5–300 seconds). Home Assistant edits update immediately. Changes between checks may be combined into one event.",
+      "data": {"scan_interval": "Refresh interval (seconds)"}
+    }}
+  }
+}
