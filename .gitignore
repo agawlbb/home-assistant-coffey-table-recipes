@@ -13,3 +13,5 @@ __pycache__/
 .storage/
 htmlcov/
 .coverage
+desktop.ini
+Thumbs.db
