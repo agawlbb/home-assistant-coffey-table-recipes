@@ -58,3 +58,11 @@ only; no app build or hosted Flutter deployment was requested or produced.
 The PHP request-journal fixtures passed persistence, household isolation, ordered
 IDs, non-mutating reads and the 128-request retention bound. Delivery of a real
 app-open event through an installed HA instance remains unverified.
+
+Backend synchronization support was deployed successfully as
+`8ec35404908a745cc549735580e8c3164d9c124b` in
+[run 39148973036](https://github.com/agawlbb/coffey-table-recipes-server/actions/runs/39148973036).
+Independent HTTPS checks confirmed the matching receipt, HTTP 200 health,
+HTTP 401 for unauthenticated request creation and integration reads, HTTP 405
+for GET on the POST-only request endpoint, and HTTP 403 on journal storage.
+No real household data or sync requests were changed during hosted verification.
