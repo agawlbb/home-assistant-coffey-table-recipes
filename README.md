@@ -150,8 +150,11 @@ CTR detects a matching `ctr_keep_bridge` entry during setup, unloads/disables it
 before starting a new writer, imports its final mapping (including pending adds)
 through HA's `Store` API, and carries over its last-success time. Its previous
 store is retained for recovery. After verifying the native status and list
-contents, remove the old bridge entry and its `custom_components/ctr_keep_bridge`
-files. Google Keep Sync stays installed and signed in. A still-running old bridge
+contents, keep a Home Assistant backup and run
+`coffey_table_recipes.retire_keep_bridge` for the household. It performs another
+fresh verified sync, removes the disabled old config entry through HA's normal
+API, and moves `custom_components/ctr_keep_bridge` into
+`coffey_table_recipes_recovery` for recovery. Google Keep Sync stays installed and signed in. A still-running old bridge
 blocks native writes. Changing Keep selections uses separate ledgers, so a prior
 list's mapping cannot be applied to a new list.
 

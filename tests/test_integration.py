@@ -3,6 +3,7 @@ from copy import deepcopy
 from unittest.mock import AsyncMock, patch
 import pytest
 from homeassistant import config_entries
+from homeassistant.core import callback
 from homeassistant.components.todo import TodoItem, TodoItemStatus
 from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -120,7 +121,10 @@ async def test_sync_requests_are_separate_persistent_and_not_repeated(hass):
     config = await setup(hass)
     coordinator = config.runtime_data
     sync_events, list_events = [], []
-    unsub_sync = hass.bus.async_listen(EVENT_SYNC_REQUESTED, sync_events.append)
+    @callback
+    def capture_sync(event):
+        sync_events.append(event)
+    unsub_sync = hass.bus.async_listen(EVENT_SYNC_REQUESTED, capture_sync)
     unsub_list = hass.bus.async_listen(EVENT_CHANGED, list_events.append)
     state = deepcopy(STATE)
     state["sync_requests"] = {"latest_id":2, "requests":[

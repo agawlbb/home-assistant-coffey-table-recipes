@@ -17,7 +17,8 @@ class KeepSyncStatus(SensorEntity):
     def __init__(self, entry):
         self.entry = entry
         self._attr_unique_id = f"{entry.data['household_id']}_keep_sync_status"
-        self._attr_device_info = {"identifiers": {(DOMAIN, entry.data["household_id"])}}
+        self._attr_device_info = {"identifiers": {(DOMAIN, entry.data["household_id"])},
+                                  "name": entry.title, "manufacturer": "CoffeyTableRecipes", "entry_type": "service"}
 
     async def async_added_to_hass(self):
         self.async_on_remove(async_dispatcher_connect(self.hass,
