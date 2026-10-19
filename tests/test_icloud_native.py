@@ -74,11 +74,14 @@ async def test_failed_or_partial_refresh_never_becomes_deletion(hass, apple):
 async def test_apple_update_preserves_notes_and_due_date(hass, apple):
     entry, _, _, entity_id = apple
     sync = entry.runtime_data.icloud_sync
-    with patch.object(hass.services,"async_call",new_callable=AsyncMock) as service:
-        await sync.write("right","update","a",{"summary":"Oat milk","status":"completed"})
-    service.assert_awaited_once_with("todo","update_item",{
+    calls = []
+    async def service(call):
+        calls.append(dict(call.data))
+    hass.services.async_register("todo","update_item",service)
+    await sync.write("right","update","a",{"summary":"Oat milk","status":"completed"})
+    assert calls == [{
         "entity_id":entity_id,"item":"a","rename":"Oat milk","status":"completed",
-        "description":"Apple notes","due_date":"2026-10-25"},blocking=True)
+        "description":"Apple notes","due_date":"2026-10-25"}]
 
 
 async def test_scoped_requests_ctr_edits_ha_edits_and_poll(hass, apple):

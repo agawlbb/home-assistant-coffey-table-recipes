@@ -167,17 +167,7 @@ bounded to 100 changes and 180 seconds. No sync is reported as confirmed after
 an authentication/network error. This adapter uses Google Keep Sync's internal
 1.1.0 API; future upstream API changes may require compatibility updates.
 
-## Development
-
-Run `python -m unittest discover -s tests -p test_api.py -v` for the isolated client tests.
-Full HA integration tests are configured in CI on Linux with the supported HA
-test package. See `VALIDATION.md` for what has actually been verified.
-No app builds or private Firebase configuration belong in this repository.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
-# Apple iCloud shopping list synchronization
+## Apple iCloud shopping list synchronization
 
 Version 0.4.0 adds an optional **Apple iCloud shopping list** selector in
 **Settings → Devices & services → CoffeyTableRecipes → Configure**.
@@ -211,3 +201,13 @@ Google Keep remains independently optional: select either provider or both. Both
 selected lists share the household's CTR shopping items, so changes can propagate
 to both external lists. Leave Keep unselected if moving exclusively to Apple.
 
+## Development
+
+Run `python -m unittest discover -s tests -p test_api.py -v` for the isolated client tests.
+Full HA integration tests are configured in CI on Linux with the supported HA
+test package. See `VALIDATION.md` for what has actually been verified.
+No app builds or private Firebase configuration belong in this repository.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
