@@ -18,6 +18,14 @@ native To-do actions, using the existing iCloud account. Refresh failures and
 skipped unreadable reminders block reconciliation. No Apple credentials, private
 list identities, or household contents are included in this repository.
 
+Installed through HACS and restarted Home Assistant successfully. The live CTR
+entry loaded, its options schema exposes an optional selector restricted to
+`icloud` To-do entities, and the new Apple synchronization sensor reports
+`disabled` until a list is selected. Existing Keep synchronization resumed as
+`synced` with its 15 mappings and no changes. No Apple list was selected or
+modified during this installation check; real Apple end-to-end reconciliation
+remains unverified. The optional selector lets the household choose its list.
+
 ## Native Google Keep synchronization (0.3.0)
 
 Runtime commit `3d92344` passed all 53 tests in
