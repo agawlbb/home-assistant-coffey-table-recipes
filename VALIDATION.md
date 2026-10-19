@@ -1,5 +1,23 @@
 # Validation — October 18, 2026
 
+## Optional Apple iCloud list synchronization — October 19, 2026 (0.4.0)
+
+Runtime commit `21d3a2e` passed all 60 tests in
+[Linux CI run 39244468045](https://github.com/agawlbb/home-assistant-coffey-table-recipes/actions/runs/39244468045).
+The 37 isolated API/engine/Keep-adapter tests also passed locally on Windows.
+Seven new real-HA tests cover iCloud mapping and status persistence, failed and
+partially decrypted refreshes without writes, preservation of Apple notes/due
+dates in service calls, scoped app requests, CTR/HA edit triggers, 60-second
+polling, unloading, optional selection/clearing, list ownership, and Apple-to-CTR
+renaming with CTR departments retained. Remote Apple/CTR responses are mocked in
+these tests; the existing reconciliation engine's bidirectional and duplicate
+checks are reused.
+
+The adapter follows Home Assistant 2026.10.2's iCloud reminder coordinator and
+native To-do actions, using the existing iCloud account. Refresh failures and
+skipped unreadable reminders block reconciliation. No Apple credentials, private
+list identities, or household contents are included in this repository.
+
 ## Native Google Keep synchronization (0.3.0)
 
 Runtime commit `3d92344` passed all 53 tests in
