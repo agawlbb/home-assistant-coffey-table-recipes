@@ -9,6 +9,7 @@ from .api import ApiError, Client
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .keep_sync import CONF_KEEP_LIST, CONF_KEEP_TARGET, resolve_keep_selection
 from .keep_engine import SyncBlocked
+from .icloud_sync import CONF_ICLOUD_LIST, CONF_ICLOUD_TARGET, resolve_icloud_selection
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -99,14 +100,23 @@ class OptionsFlow(config_entries.OptionsFlow):
                 if entity_id:
                     options[CONF_KEEP_TARGET] = resolve_keep_selection(self.hass, entity_id, self.config_entry.entry_id)
                     options[CONF_KEEP_LIST] = entity_id
+                entity_id = user_input.get(CONF_ICLOUD_LIST)
+                if entity_id:
+                    options[CONF_ICLOUD_TARGET] = resolve_icloud_selection(self.hass, entity_id, self.config_entry.entry_id)
+                    options[CONF_ICLOUD_LIST] = entity_id
                 return self.async_create_entry(title="", data=options)
             except SyncBlocked:
-                errors[CONF_KEEP_LIST] = "invalid_keep_list"
+                field = CONF_ICLOUD_LIST if entity_id == user_input.get(CONF_ICLOUD_LIST) else CONF_KEEP_LIST
+                errors[field] = "invalid_icloud_list" if field == CONF_ICLOUD_LIST else "invalid_keep_list"
         target = self.config_entry.options.get(CONF_KEEP_TARGET)
         selected = er.async_get(self.hass).async_get_entity_id("todo", "google_keep_sync", target["keep_unique"]) if target else None
+        apple = self.config_entry.options.get(CONF_ICLOUD_TARGET)
+        apple_selected = er.async_get(self.hass).async_get_entity_id("todo", "icloud", apple["icloud_unique"]) if apple else None
         return self.async_show_form(step_id="init", data_schema=vol.Schema({
             vol.Required("scan_interval", default=self.config_entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL)):
                 vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
             vol.Optional(CONF_KEEP_LIST, default=selected): vol.Any(None, selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="todo", integration="google_keep_sync"))),
+            vol.Optional(CONF_ICLOUD_LIST, default=apple_selected): vol.Any(None, selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="todo", integration="icloud"))),
         }), errors=errors)

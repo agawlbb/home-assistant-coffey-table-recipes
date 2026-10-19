@@ -6,7 +6,7 @@ from .const import DOMAIN
 
 async def async_setup_entry(hass, entry, async_add_entities):
     # The sensor reads runtime_data dynamically; Keep setup runs after platforms.
-    async_add_entities([KeepSyncStatus(entry)])
+    async_add_entities([KeepSyncStatus(entry), IcloudSyncStatus(entry)])
 
 
 class KeepSyncStatus(SensorEntity):
@@ -38,3 +38,26 @@ class KeepSyncStatus(SensorEntity):
                 "last_error": sync.last_error, "changes": sync.changes,
                 "mapped_items": len((sync.state or {}).get("rows", [])),
                 "migrated_from": sync.migrated_from, "keep_entity_id": sync.keep_entity_id()}
+
+
+class IcloudSyncStatus(KeepSyncStatus):
+    _attr_name = "Apple iCloud synchronization"
+
+    def __init__(self, entry):
+        super().__init__(entry)
+        self._attr_unique_id = f"{entry.data['household_id']}_icloud_sync_status"
+
+    @property
+    def native_value(self):
+        sync = getattr(self.entry.runtime_data, "icloud_sync", None)
+        return sync.status if sync else "disabled"
+
+    @property
+    def extra_state_attributes(self):
+        sync = getattr(self.entry.runtime_data, "icloud_sync", None)
+        if sync is None:
+            return {"last_success": None, "last_error": None}
+        return {"last_success": sync.last_success, "last_reason": sync.last_reason,
+                "last_error": sync.last_error, "changes": sync.changes,
+                "mapped_items": len((sync.state or {}).get("rows", [])),
+                "icloud_entity_id": sync.keep_entity_id()}

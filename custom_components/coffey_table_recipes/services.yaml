@@ -18,3 +18,13 @@ retire_keep_bridge:
       selector:
         config_entry:
           integration: coffey_table_recipes
+sync_icloud:
+  name: Synchronize Apple iCloud shopping list
+  description: Fetch fresh Apple reminders and reconcile the selected list with CTR.
+  fields:
+    config_entry_id:
+      name: CTR household connection
+      description: Required only when more than one household has iCloud synchronization enabled.
+      selector:
+        config_entry:
+          integration: coffey_table_recipes

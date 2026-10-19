@@ -5,12 +5,17 @@
       "user": {
         "title": "Connect your household",
         "description": "Sign in with a CoffeyTableRecipes household owner or administrator account. Your password is used once and never saved. Google-only accounts must first add an email/password sign-in method to their existing account.",
-        "data": {"email": "Email", "password": "Password"}
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
       },
       "household": {
         "title": "Choose your household",
         "description": "Everyone in this household shares this connection and shopping list.",
-        "data": {"household_id": "Household"}
+        "data": {
+          "household_id": "Household"
+        }
       }
     },
     "error": {
@@ -27,11 +32,20 @@
     }
   },
   "options": {
-    "step": {"init": {
-      "title": "Shopping list settings",
-      "description": "Check CTR every 5–300 seconds. Optionally select a Google Keep Sync to-do list to synchronize additions, renames, checkmarks and deletions in both directions. Google authentication stays in Google Keep Sync. Keep is checked every 60 seconds and immediately for CTR requests and HA edits. Clear the selection to stop synchronization.",
-      "data": {"scan_interval": "CTR refresh interval (seconds)", "google_keep_list": "Google Keep Sync list (optional)"}
-    }},
-    "error": {"invalid_keep_list": "Choose an enabled Google Keep Sync list that is not already connected to another household. Check that the list is selected in Google Keep Sync."}
+    "step": {
+      "init": {
+        "title": "Shopping list settings",
+        "description": "Check CTR every 5–300 seconds. Optionally choose Google Keep and/or Apple iCloud lists for two-way additions, renames, checkmarks and deletions. Authentication stays in each existing integration. External lists are checked every 60 seconds and for CTR sync requests and HA edits. Clear a selection to stop syncing that list. The first sync merges both lists; later deletions propagate.",
+        "data": {
+          "scan_interval": "CTR refresh interval (seconds)",
+          "google_keep_list": "Google Keep Sync list (optional)",
+          "icloud_list": "Apple iCloud shopping list (optional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_keep_list": "Choose an enabled Google Keep Sync list that is not already connected to another household. Check that the list is selected in Google Keep Sync.",
+      "invalid_icloud_list": "Choose an enabled Apple iCloud to-do list that is not connected to another CTR household."
+    }
   }
 }

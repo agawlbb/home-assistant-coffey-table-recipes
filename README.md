@@ -177,3 +177,37 @@ No app builds or private Firebase configuration belong in this repository.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+# Apple iCloud shopping list synchronization
+
+Version 0.4.0 adds an optional **Apple iCloud shopping list** selector in
+**Settings → Devices & services → CoffeyTableRecipes → Configure**.
+First configure Home Assistant's built-in [Apple iCloud integration](https://www.home-assistant.io/integrations/icloud/)
+and make sure its Apple Reminders shopping list appears as an enabled `todo` entity.
+This requires a Home Assistant version with iCloud Reminders support (2026.10 or
+later). Select that list in CTR's settings; Apple authentication and approval of
+access stay in the iCloud integration. CTR never stores an Apple password.
+
+The first synchronization merges both lists. Subsequent additions, renames,
+checked/unchecked states and deletions synchronize in both directions. Duplicate
+items keep separate identities, and CTR departments are preserved. Existing Apple
+notes and due dates are retained when updating a reminder; those fields and Apple's
+grocery categories are not copied into CTR departments. The same three-way merge
+and uncertain-add protections used for Keep apply, with a separate persistent
+mapping for each household and selected Apple list. Switching lists starts a new
+merge; clearing the selector stops synchronization without deleting items.
+
+CTR changes and scoped app sync requests trigger reconciliation. Completed iCloud
+coordinator refreshes, including Home Assistant edits, also trigger reconciliation.
+A 60-second poll fetches fresh iCloud reminders for direct Apple Reminders changes.
+Failed refreshes, a missing list, or unreadable encrypted reminders stop the run
+without treating cached/partial results as deletions. Approve Apple access on an
+Apple device if the status reports an encryption problem.
+
+The **Apple iCloud synchronization** sensor reports `disabled`, `syncing`, `synced`
+or `not_confirmed`, with the last successful sync, error and mapped item count.
+The `coffey_table_recipes.sync_icloud` action requests a fresh sync; specify
+`config_entry_id` when multiple CTR households have iCloud synchronization enabled.
+Google Keep remains independently optional: select either provider or both. Both
+selected lists share the household's CTR shopping items, so changes can propagate
+to both external lists. Leave Keep unselected if moving exclusively to Apple.
+
