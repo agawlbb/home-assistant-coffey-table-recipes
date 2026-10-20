@@ -20,6 +20,13 @@ deployment packages and outdated deployment notes were deleted. Current working
 files were searched for stale references. Existing Git history and full-system
 backup snapshots were not rewritten or deleted.
 
+Installed 0.4.1 through HACS and verified after restart: both Keep and iCloud
+reported `synced` with no errors or changes; all three lists matched their
+pre-update snapshots. The live domain exposed exactly the two native sync
+actions. Read-only inspection confirmed the removed functionality and obsolete
+metadata were absent from installed source, and the obsolete component,
+dedicated recovery directory and orphaned store were absent from disk.
+
 ## Optional Apple iCloud list synchronization — October 19, 2026 (0.4.0)
 
 Runtime commit `21d3a2e` passed all 60 tests in
