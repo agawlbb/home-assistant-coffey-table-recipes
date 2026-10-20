@@ -1,5 +1,4 @@
-pytest-homeassistant-custom-component==0.13.298
-pytest-asyncio
-aiohttp
-# HA 2025.12 pins aiodns before its pycares 5 compatibility update.
-pycares<5
+pytest-homeassistant-custom-component==0.13.373
+# Match the supported Home Assistant release's HTTP dependency.
+aiohttp==3.14.5
+pip-audit==2.10.1

@@ -9,8 +9,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - run: pip install -r requirements-test.txt
+      - run: python -m pip check
+      - run: python -m pip_audit --progress-spinner off
       - run: python -m unittest discover -s tests -p test_api.py -v
       - run: python -m unittest discover -s tests -p test_keep_engine.py -v
       - run: python -m unittest discover -s tests -p test_keep_adapter.py -v
