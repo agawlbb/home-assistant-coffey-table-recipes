@@ -1,5 +1,25 @@
 # Validation — October 18, 2026
 
+## Reduced service surface — October 20, 2026 (0.4.1)
+
+Runtime commit `2de3550` passed all 57 tests in
+[Linux CI run 39407925976](https://github.com/agawlbb/home-assistant-coffey-table-recipes/actions/runs/39407925976).
+The unused configuration-deletion and component-archiving functionality was
+removed entirely, together with its setup compatibility path, metadata,
+documentation and obsolete tests. A real HA regression test verifies that the
+domain registers exactly `sync_google_keep` and `sync_icloud`.
+
+The targeted one-time metadata cleanup separately passed
+[run 39407598047](https://github.com/agawlbb/home-assistant-coffey-table-recipes/actions/runs/39407598047),
+including preservation of unrelated connection data and current item mappings.
+That temporary cleanup was applied on the installed instance, verified through
+read-only storage inspection, then removed from the final source.
+
+Obsolete installed source archives, orphaned item storage, local archived source,
+deployment packages and outdated deployment notes were deleted. Current working
+files were searched for stale references. Existing Git history and full-system
+backup snapshots were not rewritten or deleted.
+
 ## Optional Apple iCloud list synchronization — October 19, 2026 (0.4.0)
 
 Runtime commit `21d3a2e` passed all 60 tests in
