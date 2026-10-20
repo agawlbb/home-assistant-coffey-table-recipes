@@ -36,7 +36,7 @@ fake_modules = {
     "homeassistant.util.dt": stub("homeassistant.util.dt", utcnow=lambda: NS(isoformat=lambda: "now")),
 }
 directory = Path(__file__).parents[1] / "custom_components/coffey_table_recipes"
-spec = importlib.util.spec_from_file_location("bridge_adapter_test", directory / "keep_sync.py", submodule_search_locations=[str(directory)])
+spec = importlib.util.spec_from_file_location("keep_adapter_test", directory / "keep_sync.py", submodule_search_locations=[str(directory)])
 module = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = module
 with patch.dict(sys.modules, fake_modules):
@@ -44,8 +44,8 @@ with patch.dict(sys.modules, fake_modules):
 
 
 class AdapterTests(unittest.IsolatedAsyncioTestCase):
-    def make_bridge(self):
-        entry = NS(entry_id="bridge", data={"ctr_entry": "ctr", "keep_entry": "keep", "keep_list_id": "list",
+    def make_adapter(self):
+        entry = NS(entry_id="adapter", data={"ctr_entry": "ctr", "keep_entry": "keep", "keep_list_id": "list",
                                          "ctr_unique": "ctr_unique", "keep_unique": "keep_unique"})
         ctr = NS()
         import asyncio
@@ -64,98 +64,74 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
                       async_get=lambda entity: NS(config_entry_id="ctr" if entity == "coffey_table_recipes" else "keep", disabled_by=None))
         hass = NS(config_entries=NS(async_get_entry=entries.get, async_entries=lambda domain: []), registry=registry,
                   data={"google_keep_sync": {"keep": keep}})
-        bridge = module.KeepSync(hass, entry, entry.data)
-        return bridge, ctr, keep
+        adapter = module.KeepSync(hass, entry, entry.data)
+        return adapter, ctr, keep
 
     async def test_fresh_read_maps_only_selected_lists(self):
-        bridge, ctr, keep = self.make_bridge()
-        result = await bridge.read()
+        adapter, ctr, keep = self.make_adapter()
+        result = await adapter.read()
         self.assertEqual(result["left"]["c"], result["right"]["k"])
         ctr.async_set_updated_data.assert_called_once()
         keep.async_set_updated_data.assert_called_once()
 
     async def test_keep_network_failure_does_not_read_or_write_ctr(self):
-        bridge, ctr, keep = self.make_bridge()
+        adapter, ctr, keep = self.make_adapter()
         keep.api.fetch_all_lists.side_effect = ConnectionError()
-        result = await bridge.sync("ctr_request")
+        result = await adapter.sync("ctr_request")
         self.assertEqual(result["status"], "not_confirmed")
         ctr.client.read.assert_not_awaited()
         ctr.change.assert_not_awaited()
         self.assertIsNone(result["last_success"])
 
     async def test_ctr_network_failure_cannot_look_like_empty_list(self):
-        bridge, ctr, keep = self.make_bridge()
+        adapter, ctr, keep = self.make_adapter()
         ctr.client.read.side_effect = ConnectionError()
-        result = await bridge.sync("poll")
+        result = await adapter.sync("poll")
         self.assertEqual(result["status"], "not_confirmed")
         keep.api.async_delete_todo_item.assert_not_awaited()
 
     async def test_deleted_or_trashed_list_is_not_item_deletions(self):
-        bridge, ctr, keep = self.make_bridge()
+        adapter, ctr, keep = self.make_adapter()
         keep.api.fetch_all_lists.return_value = []
         with self.assertRaises(module.SyncBlocked):
-            await bridge.read()
+            await adapter.read()
         ctr.change.assert_not_awaited()
 
     async def test_deselected_keep_list_blocks(self):
-        bridge, ctr, keep = self.make_bridge()
-        bridge.hass.config_entries.async_get_entry("keep").data["lists_to_sync"] = []
+        adapter, ctr, keep = self.make_adapter()
+        adapter.hass.config_entries.async_get_entry("keep").data["lists_to_sync"] = []
         with self.assertRaises(module.SyncBlocked):
-            await bridge.read()
+            await adapter.read()
         keep.api.fetch_all_lists.assert_not_awaited()
 
     async def test_unload_blocks_further_writes(self):
-        bridge, ctr, keep = self.make_bridge()
-        bridge.closed = True
+        adapter, ctr, keep = self.make_adapter()
+        adapter.closed = True
         with self.assertRaises(module.SyncBlocked):
-            await bridge.write("left", "delete", "c", None)
+            await adapter.write("left", "delete", "c", None)
         ctr.change.assert_not_awaited()
 
     async def test_selected_list_identity_must_still_match(self):
-        bridge, ctr, keep = self.make_bridge()
-        bridge.hass.registry.async_get = lambda entity: NS(config_entry_id="wrong", disabled_by=None)
+        adapter, ctr, keep = self.make_adapter()
+        adapter.hass.registry.async_get = lambda entity: NS(config_entry_id="wrong", disabled_by=None)
         with self.assertRaises(module.SyncBlocked):
-            await bridge.read()
+            await adapter.read()
 
     async def test_sync_success_requires_full_final_read(self):
-        bridge, ctr, keep = self.make_bridge()
-        result = await bridge.sync("ctr_request")
+        adapter, ctr, keep = self.make_adapter()
+        result = await adapter.sync("ctr_request")
         self.assertEqual(result["status"], "synced")
         self.assertEqual(result["last_success"], "now")
         self.assertEqual(keep.api.fetch_all_lists.await_count, 2)
 
     async def test_self_changes_do_not_queue_but_ctr_requests_do(self):
-        bridge, ctr, keep = self.make_bridge()
-        await bridge.lock.acquire()
-        bridge.schedule("ctr_change")
-        self.assertFalse(bridge.again)
-        bridge.schedule("ctr_request")
-        self.assertTrue(bridge.again)
-        bridge.lock.release()
-
-    def test_retirement_preserves_source_in_recovery_folder(self):
-        import json
-        import tempfile
-        with tempfile.TemporaryDirectory() as directory:
-            source = Path(directory)/"custom_components/ctr_keep_bridge"
-            source.mkdir(parents=True)
-            (source/"manifest.json").write_text(json.dumps({"domain":"ctr_keep_bridge"}))
-            (source/"engine.py").write_text("# recovery source")
-            archive = module._archive_legacy_files(directory)
-            self.assertFalse(source.exists())
-            self.assertEqual((Path(archive)/"engine.py").read_text(), "# recovery source")
-
-    def test_retirement_refuses_wrong_component_identity(self):
-        import json
-        import tempfile
-        with tempfile.TemporaryDirectory() as directory:
-            source = Path(directory)/"custom_components/ctr_keep_bridge"
-            source.mkdir(parents=True)
-            (source/"manifest.json").write_text(json.dumps({"domain":"another_integration"}))
-            with self.assertRaises(HAError):
-                module._archive_legacy_files(directory)
-            self.assertTrue(source.exists())
-
+        adapter, ctr, keep = self.make_adapter()
+        await adapter.lock.acquire()
+        adapter.schedule("ctr_change")
+        self.assertFalse(adapter.again)
+        adapter.schedule("ctr_request")
+        self.assertTrue(adapter.again)
+        adapter.lock.release()
 
 if __name__ == "__main__":
     unittest.main()

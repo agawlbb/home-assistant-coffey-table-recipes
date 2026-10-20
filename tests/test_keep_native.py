@@ -1,20 +1,18 @@
-"""Real HA coverage for optional Keep configuration, lifecycle and migration."""
+"""Real HA coverage for optional Keep configuration and lifecycle."""
 from copy import deepcopy
 from datetime import timedelta
 from types import SimpleNamespace as NS
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry, MockModule, mock_integration, async_fire_time_changed
 
 from custom_components.coffey_table_recipes.const import DOMAIN, EVENT_CHANGED, EVENT_SYNC_REQUESTED
 from custom_components.coffey_table_recipes.keep_sync import (
-    CONF_KEEP_LIST, CONF_KEEP_TARGET, LEGACY_DOMAIN, migrate_legacy_bridge, sync_store,
+    CONF_KEEP_LIST, CONF_KEEP_TARGET,
 )
 
 pytestmark = pytest.mark.asyncio
@@ -121,40 +119,6 @@ async def test_optional_selector_validates_identity_and_can_disable(hass, pair):
     assert entry.runtime_data.keep_sync is None
 
 
-async def test_legacy_mapping_migrates_after_old_writer_stops(hass):
-    keep_entry, _, entity_id = register_keep(hass)
-    native = MockConfigEntry(domain=DOMAIN, unique_id="1", data={"household_id":"1","token":"fixture"})
-    native.add_to_hass(hass)
-    unload = AsyncMock(return_value=True)
-    mock_integration(hass, MockModule(domain=LEGACY_DOMAIN, async_setup_entry=AsyncMock(return_value=True), async_unload_entry=unload))
-    old = MockConfigEntry(domain=LEGACY_DOMAIN, state=ConfigEntryState.LOADED, data={**TARGET, "ctr_entry":native.entry_id,"ctr_unique":"1_shopping_list"})
-    old.add_to_hass(hass)
-    old.runtime_data = NS(last_success="2026-10-18T14:29:21-04:00")
-    ledger = {"rows":[{"left":"c","right":"k","base":{"summary":"Milk","status":"needs_action"},
-                        "pending":{"side":"right","before":["k"],"desired":{"summary":"Eggs","status":"needs_action"}}}]}
-    await Store(hass,1,f"{LEGACY_DOMAIN}.{old.entry_id}").async_save(ledger)
-    await migrate_legacy_bridge(hass, native)
-    unload.assert_awaited_once()
-    assert old.disabled_by == ConfigEntryDisabler.USER
-    saved = await sync_store(hass, native.entry_id, TARGET).async_load()
-    assert saved["engine"] == ledger and saved["last_success"] == "2026-10-18T14:29:21-04:00"
-    assert native.options[CONF_KEEP_TARGET] == TARGET
-    assert native.options[CONF_KEEP_LIST] == entity_id
-    assert await Store(hass,1,f"{LEGACY_DOMAIN}.{old.entry_id}").async_load() == ledger
-    # Clearing the optional list later must not silently re-enable migration.
-    hass.config_entries.async_update_entry(native, options={})
-    await migrate_legacy_bridge(hass, native)
-    assert native.options == {}
 
-
-async def test_boot_migration_never_waits_on_a_component_that_depends_on_ctr(hass):
-    register_keep(hass)
-    native = MockConfigEntry(domain=DOMAIN, data={"household_id":"1","token":"fixture"})
-    native.add_to_hass(hass)
-    old = MockConfigEntry(domain=LEGACY_DOMAIN, data={**TARGET,"ctr_entry":native.entry_id,"ctr_unique":"1_shopping_list"})
-    old.add_to_hass(hass)
-    with patch.object(hass.config_entries, "async_set_disabled_by") as disable:
-        with pytest.raises(ConfigEntryNotReady, match="Disable the standalone"):
-            await migrate_legacy_bridge(hass, native)
-        disable.assert_not_called()
-    assert native.options == {}
+async def test_only_native_sync_services_are_registered(hass, pair):
+    assert set(hass.services.async_services()[DOMAIN]) == {"sync_google_keep", "sync_icloud"}

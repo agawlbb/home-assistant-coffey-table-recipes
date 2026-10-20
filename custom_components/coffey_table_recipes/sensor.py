@@ -37,7 +37,7 @@ class KeepSyncStatus(SensorEntity):
         return {"last_success": sync.last_success, "last_reason": sync.last_reason,
                 "last_error": sync.last_error, "changes": sync.changes,
                 "mapped_items": len((sync.state or {}).get("rows", [])),
-                "migrated_from": sync.migrated_from, "keep_entity_id": sync.keep_entity_id()}
+                "keep_entity_id": sync.keep_entity_id()}
 
 
 class IcloudSyncStatus(KeepSyncStatus):

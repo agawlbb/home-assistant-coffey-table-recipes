@@ -138,28 +138,11 @@ blindly repeated. Ambiguous/missing additions require manual reconciliation.
 
 The **Google Keep synchronization** sensor on the CTR household device reports
 `disabled`, `syncing`, `synced`, or `not_confirmed`, with `last_success`,
-`last_reason`, `last_error`, `changes`, `mapped_items` and migration information.
+`last_reason`, `last_error`, `changes`, `mapped_items`.
 `synced` requires fresh reads and complete verification of both lists. Last-success
 time and item mapping survive restarts. Run `coffey_table_recipes.sync_google_keep`
 for manual synchronization; specify `config_entry_id` when more than one household
 is enabled. Clearing the selection stops future writes without undoing edits.
-
-### Replacing the standalone bridge
-
-Disable the standalone bridge before installing this update. CTR detects a
-matching `ctr_keep_bridge` entry during setup, unloads/disables it
-before starting a new writer, imports its final mapping (including pending adds)
-through HA's `Store` API, and carries over its last-success time. Its previous
-store is retained for recovery. After verifying the native status and list
-contents, keep a Home Assistant backup and run
-`coffey_table_recipes.retire_keep_bridge` for the household. It performs another
-fresh verified sync, removes the disabled old config entry through HA's normal
-API, and moves `custom_components/ctr_keep_bridge` into
-`coffey_table_recipes_recovery` for recovery. Google Keep Sync stays installed and signed in. A still-running old bridge
-blocks native writes. Changing Keep selections uses separate ledgers, so a prior
-list's mapping cannot be applied to a new list. If an enabled bridge is waiting
-on CTR during boot, CTR waits for you to disable that bridge instead of creating
-a circular startup dependency.
 
 Remote services cannot provide an atomic transaction across both lists. A narrow
 read/write race remains, phone uploads may be delayed by Google, and each run is

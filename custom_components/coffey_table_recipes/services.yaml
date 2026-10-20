@@ -8,16 +8,6 @@ sync_google_keep:
       selector:
         config_entry:
           integration: coffey_table_recipes
-retire_keep_bridge:
-  name: Retire migrated Google Keep bridge
-  description: After a fresh verified sync, remove the disabled standalone bridge entry and move its source to a recovery folder. Keep a Home Assistant backup before using this action.
-  fields:
-    config_entry_id:
-      name: Household integration
-      required: true
-      selector:
-        config_entry:
-          integration: coffey_table_recipes
 sync_icloud:
   name: Synchronize Apple iCloud shopping list
   description: Fetch fresh Apple reminders and reconcile the selected list with CTR.

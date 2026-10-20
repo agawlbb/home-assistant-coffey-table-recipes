@@ -8,7 +8,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .api import ApiError, Client
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, EVENT_CHANGED, EVENT_SYNC_REQUESTED
-from .keep_sync import async_register_keep_service, async_setup_keep_sync, async_stop_keep_sync, migrate_legacy_bridge
+from .keep_sync import async_register_keep_service, async_setup_keep_sync, async_stop_keep_sync
 from .icloud_sync import async_register_icloud_service, async_setup_icloud_sync, async_stop_icloud_sync
 
 PLATFORMS = [Platform.TODO, Platform.EVENT, Platform.SENSOR]
@@ -75,7 +75,6 @@ class ShoppingCoordinator(DataUpdateCoordinator):
 
 
 async def async_setup_entry(hass, entry):
-    await migrate_legacy_bridge(hass, entry)
     coordinator = ShoppingCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator

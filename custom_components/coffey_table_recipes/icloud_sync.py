@@ -46,7 +46,7 @@ class IcloudSync(KeepSync):
         self.task = None
         self.again = self.closed = False
         self.status = "not_confirmed"
-        self.last_success = self.last_reason = self.last_error = self.migrated_from = None
+        self.last_success = self.last_reason = self.last_error = None
         self.changes = 0
         self._reminders = {}
         self._writing = False
