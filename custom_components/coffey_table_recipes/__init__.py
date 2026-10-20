@@ -75,10 +75,6 @@ class ShoppingCoordinator(DataUpdateCoordinator):
 
 
 async def async_setup_entry(hass, entry):
-    if "keep_bridge_migrated" in entry.data:
-        data = dict(entry.data)
-        data.pop("keep_bridge_migrated")
-        hass.config_entries.async_update_entry(entry, data=data)
     coordinator = ShoppingCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator

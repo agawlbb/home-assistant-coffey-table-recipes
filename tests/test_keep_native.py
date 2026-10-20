@@ -123,14 +123,3 @@ async def test_optional_selector_validates_identity_and_can_disable(hass, pair):
 async def test_only_native_sync_services_are_registered(hass, pair):
     assert set(hass.services.async_services()[DOMAIN]) == {"sync_google_keep", "sync_icloud"}
 
-
-async def test_obsolete_marker_cleanup_preserves_other_connection_data(hass, pair):
-    entry, _, _, _ = pair
-    assert await hass.config_entries.async_unload(entry.entry_id)
-    original = {**entry.data, "future_metadata": "keep me"}
-    hass.config_entries.async_update_entry(entry, data={**original, "keep_bridge_migrated":"removed"})
-    assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-    await entry.runtime_data.keep_sync.task
-    assert dict(entry.data) == original
-    assert entry.runtime_data.keep_sync.status == "synced"

@@ -27,7 +27,7 @@ fake_modules = {
     "homeassistant": stub("homeassistant"),
     "homeassistant.const": stub("homeassistant.const", Platform=NS(SENSOR="sensor")),
     "homeassistant.core": stub("homeassistant.core", SupportsResponse=NS(OPTIONAL="optional"), callback=mark_callback),
-    "homeassistant.exceptions": stub("homeassistant.exceptions", ConfigEntryNotReady=HAError, HomeAssistantError=HAError),
+    "homeassistant.exceptions": stub("homeassistant.exceptions", HomeAssistantError=HAError),
     "homeassistant.helpers": stub("homeassistant.helpers", entity_registry=NS(async_get=lambda hass: hass.registry)),
     "homeassistant.helpers.dispatcher": stub("homeassistant.helpers.dispatcher", async_dispatcher_send=lambda *a: None),
     "homeassistant.helpers.event": stub("homeassistant.helpers.event", async_track_time_interval=lambda *a: lambda: None),
