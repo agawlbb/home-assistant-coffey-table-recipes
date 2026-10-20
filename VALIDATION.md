@@ -1,5 +1,23 @@
 # Validation — October 18, 2026
 
+## Current CI dependencies — October 20, 2026
+
+Commit `ad41764` passed all 57 tests in
+[Linux CI run 39411036851](https://github.com/agawlbb/home-assistant-coffey-table-recipes/actions/runs/39411036851)
+using Python 3.14, pytest-homeassistant-custom-component 0.13.373,
+Home Assistant 2026.10.2 and aiohttp 3.14.5. The obsolete pycares restriction and
+older Home Assistant fixture pin were removed. The current resolver installed
+aiodns 4.0.4 and pycares 5.2.1 without the former compatibility workaround.
+
+`python -m pip check` passed. pip-audit 2.10.1 audited the installed environment
+and reported no known vulnerabilities; no advisories were suppressed. CI now
+checks dependency consistency and runs that audit before every test run.
+Tests are invoked with `python -m pytest` so project imports remain available
+under the updated pytest stack. These changes affect CI/development dependencies
+only; no installed Home Assistant packages, integration runtime code, or app
+builds were changed. Audit results reflect the advisory data available at the
+time of that run, rather than a guarantee against future vulnerabilities.
+
 ## Reduced service surface — October 20, 2026 (0.4.1)
 
 Runtime commit `2de3550` passed all 57 tests in

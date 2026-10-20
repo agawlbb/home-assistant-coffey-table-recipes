@@ -186,6 +186,12 @@ to both external lists. Leave Keep unselected if moving exclusively to Apple.
 
 ## Development
 
+Use Python 3.14 and install `requirements-test.txt`. The test fixture package pins
+Home Assistant 2026.10.2; aiohttp is explicitly pinned to its matching 3.14.5
+release. CI runs `python -m pip check` and `python -m pip_audit --progress-spinner off`
+against the installed dependency set before the tests. These are development
+dependencies; the installed integration uses Home Assistant's managed runtime.
+
 Run `python -m unittest discover -s tests -p test_api.py -v` for the isolated client tests.
 Full HA integration tests are configured in CI on Linux with the supported HA
 test package. See `VALIDATION.md` for what has actually been verified.
