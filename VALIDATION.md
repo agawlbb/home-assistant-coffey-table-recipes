@@ -146,3 +146,16 @@ Independent HTTPS checks confirmed the matching receipt, HTTP 200 health,
 HTTP 401 for unauthenticated request creation and integration reads, HTTP 405
 for GET on the POST-only request endpoint, and HTTP 403 on journal storage.
 No real household data or sync requests were changed during hosted verification.
+
+## Patched CI harness - October 21, 2026
+
+Home Assistant 2026.10.2 pins vulnerable uv 0.12.23 and Pillow 12.3.0.
+The CI-only overrides install uv 0.13.4 and Pillow 13.0.0; they do not modify
+an installed Home Assistant system. The dependency checker permits precisely
+these two upstream metadata discrepancies and rejects any others. Advisory
+checking remains enabled without suppressions, followed by the complete suite.
+
+On JoeLaptop, Python 3.14.8 installed this environment successfully. The
+version/consistency checks and PNG/TIFF/JPEG round trips passed, as did all 35
+isolated API, Keep engine and adapter tests. Full HA pytest startup requires
+POSIX fcntl, unavailable on Windows; Linux CI supplies that runtime validation.
