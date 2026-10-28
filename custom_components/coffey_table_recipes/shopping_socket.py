@@ -125,4 +125,3 @@ class ShoppingSocket:
                 await self.task
             except asyncio.CancelledError:
                 pass
-
