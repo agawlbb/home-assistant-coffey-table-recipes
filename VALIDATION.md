@@ -180,3 +180,14 @@ Verified in the existing shared development container:
 No running Home Assistant installation was changed. Real-user sign-in, public
 TLS/WSS, hosted schema import, sync-journal transfer and production cutover remain
 pending. Source publication does not establish those results or authorize merging.
+
+
+## Completed backend branch state — 2026-10-28
+
+The backend branch now unconditionally retires legacy shopping HTTP routes and
+uses SQL-only HA credentials, with deployment-time import included. The existing
+HA credential record and journal are installed privately on the VPS, and the
+shared credential hash was imported and verified. Public WSS authenticated read
+and open-connection revocation passed against the prepared VPS service and hosted
+database. The integration source is unchanged from the passing 61-test run; no
+running HA installation was updated.
