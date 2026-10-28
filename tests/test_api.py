@@ -1,5 +1,6 @@
 """Transport-level client checks, without needing a running HA installation."""
 import asyncio
+from copy import deepcopy
 import importlib.util
 from pathlib import Path
 import sys
@@ -24,19 +25,19 @@ def snapshot(revision=1, items=None):
 
 
 class ClientTests(unittest.IsolatedAsyncioTestCase):
-    async def test_add_retries_conflict_preserving_other_member(self):
+    async def test_add_uses_local_state_without_waiting_for_a_remote_read(self):
         client = api.Client(None, "household-token")
         first = snapshot()
-        latest = snapshot(2, first["items"] + [{"id": "bread", "name": "Bread", "checked": True, "department": ""}])
-        client.read = AsyncMock(side_effect=[first, latest])
-        client.request = AsyncMock(side_effect=[api.ApiError(409), snapshot(3)])
+        client._state = deepcopy(first)
+        client._loaded = True
+        client.read = AsyncMock(side_effect=AssertionError("Local edit must not wait for network"))
+        client.request = AsyncMock(return_value=snapshot(2))
         await client.mutate("add", name=" Eggs ")
-        bodies = [call.kwargs["body"] for call in client.request.call_args_list]
-        self.assertEqual(bodies[1]["revision"], 2)
-        self.assertEqual([i["id"] for i in bodies[1]["items"][:-1]], ["milk", "bread"])
-        self.assertEqual(bodies[0]["items"][-1]["id"], bodies[1]["items"][-1]["id"])
-        self.assertEqual(bodies[1]["items"][-1]["name"], "Eggs")
-        self.assertNotIn("departments", bodies[1])
+        client.read.assert_not_called()
+        body = client.request.call_args.kwargs["body"]
+        self.assertEqual(body["items"][-1]["name"], "Eggs")
+        self.assertEqual(body["base_items"], first["items"])
+        self.assertNotIn("departments", body)
         self.assertEqual(first, snapshot())
 
     async def test_check_uncheck_rename_preserves_department(self):
@@ -65,13 +66,13 @@ class ClientTests(unittest.IsolatedAsyncioTestCase):
             await client.mutate("add", name="Milk")
         self.assertEqual(client.request.await_count, 1)
 
-    async def test_conflicts_are_bounded(self):
+    async def test_rejected_write_is_not_recreated(self):
         client = api.Client(None)
         client.read = AsyncMock(return_value=snapshot())
         client.request = AsyncMock(side_effect=api.ApiError(409))
         with self.assertRaises(api.ApiError):
             await client.mutate("add", name="Milk")
-        self.assertEqual(client.request.await_count, 3)
+        self.assertEqual(client.request.await_count, 1)
 
     async def test_missing_item_is_not_recreated(self):
         client = api.Client(None)

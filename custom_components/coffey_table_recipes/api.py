@@ -218,35 +218,31 @@ class Client:
         return await self.request("DELETE", "/home-assistant/connection")
 
     async def mutate(self, operation, *, uid=None, name=None, checked=None, uids=None):
-        """Prepare changes from confirmed state; durable receipts make delivery replayable."""
-        new_uid = uuid4().hex
+        """Edit local state; the durable outbox retries the original payload."""
         async with self._lock:
-            for attempt in range(3):
-                await self.load()
-                state = self.local_state() or await self.read()
-                items = deepcopy(state["items"])
-                if operation == "add":
-                    if not name or not name.strip() or len(name.strip()) > 200:
+            await self.load()
+            state = self.local_state() or await self.read()
+            items = deepcopy(state["items"])
+            if operation == "add":
+                if not name or not name.strip() or len(name.strip()) > 200:
+                    raise ApiError(422)
+                items.append({"id": uuid4().hex, "name": name.strip(), "checked": False, "department": ""})
+            elif operation == "remove":
+                if set(uids) - {item["id"] for item in items}:
+                    raise ApiError(404)
+                items = [item for item in items if item["id"] not in uids]
+            elif operation == "update":
+                match = next((item for item in items if item["id"] == uid), None)
+                if match is None:
+                    raise ApiError(404)
+                if name is not None:
+                    if not name.strip() or len(name.strip()) > 200:
                         raise ApiError(422)
-                    items.append({"id": new_uid, "name": name.strip(), "checked": False, "department": ""})
-                elif operation == "remove":
-                    if set(uids) - {item["id"] for item in items}:
-                        raise ApiError(404)
-                    items = [item for item in items if item["id"] not in uids]
-                elif operation == "update":
-                    matches = [item for item in items if item["id"] == uid]
-                    if not matches:
-                        raise ApiError(404)
-                    if name is not None:
-                        if not name.strip() or len(name.strip()) > 200:
-                            raise ApiError(422)
-                        matches[0]["name"] = name.strip()
-                    if checked is not None:
-                        matches[0]["checked"] = checked
-                else:
-                    raise ValueError("Unknown operation")
-                try:
-                    return await self.request("POST", "/home-assistant/shopping-list", body={"revision": state["revision"], "items": items, "base_items": deepcopy(state["items"])})
-                except ApiError as err:
-                    if err.status != 409 or attempt == 2:
-                        raise
+                    match["name"] = name.strip()
+                if checked is not None:
+                    match["checked"] = checked
+            else:
+                raise ValueError("Unknown operation")
+            return await self.request("POST", "/home-assistant/shopping-list", body={
+                "revision": state["revision"], "items": items, "base_items": deepcopy(state["items"]),
+            })

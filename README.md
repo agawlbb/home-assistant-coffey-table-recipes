@@ -205,8 +205,7 @@ MIT. See [LICENSE](LICENSE).
 
 `migration/shopping-websocket` (base `aa5fc4f`) moves shopping traffic to
 `wss://ctr.coffeybean.com/shopping`. Account sign-in and integration credential
-management remain on inMotion. Backend deployment includes credential preparation
-and retires the old shopping HTTP routes; no separate switch is required.
+management remain on inMotion. Backend deployment retires the old shopping HTTP routes; no separate switch is required.
 
 The integration maintains an authenticated household connection, immediately
 publishes pushed changes, and reconnects automatically. Its existing refresh
@@ -218,5 +217,5 @@ responses; unrelated pushed changes do not undo local pending deletions.
 
 All three repositories remain on task branches until testing and user merge
 approval. This source push does not install or update a running HA instance.
-The backend repository's `docs/shopping-websocket-migration.md` contains the
-complete backend deployment entry point; there is no separate cutover switch.
+The backend repository separates `inmotion/` and `vps/` source, with one copy command
+for each server. Setup and credential import do not run during routine deployment.
