@@ -4,6 +4,7 @@ from datetime import timedelta
 import logging
 from homeassistant.const import Platform
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .api import ApiError, Client
@@ -21,10 +22,15 @@ class ShoppingCoordinator(DataUpdateCoordinator):
                          update_interval=timedelta(seconds=entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL)))
         self.entry = entry
         self.options = dict(entry.options)
-        self.client = Client(async_get_clientsession(hass), entry.data["token"])
+        self.client = Client(async_get_clientsession(hass), entry.data["token"],
+                             store=Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.shopping"),
+                             on_change=self._pushed)
         self.last_event = None
         self.last_sync_requests = []
         self._snapshot_lock = asyncio.Lock()
+
+    def _pushed(self, state):
+        self.async_set_updated_data(self.accept(state))
 
     def accept(self, state):
         previous = self.data
@@ -76,7 +82,17 @@ class ShoppingCoordinator(DataUpdateCoordinator):
 
 async def async_setup_entry(hass, entry):
     coordinator = ShoppingCoordinator(hass, entry)
-    await coordinator.async_config_entry_first_refresh()
+    await coordinator.client.load()
+    cached = coordinator.client.local_state()
+    if cached is not None:
+        coordinator.async_set_updated_data(coordinator.accept(cached))
+    else:
+        try:
+            await coordinator.async_config_entry_first_refresh()
+        except Exception:
+            await coordinator.client.close()
+            raise
+    coordinator.client.socket.start()
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_setup_keep_sync(hass, entry)
@@ -95,7 +111,10 @@ async def _options_updated(hass, entry):
 async def async_unload_entry(hass, entry):
     await async_stop_icloud_sync(entry)
     await async_stop_keep_sync(entry)
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        await entry.runtime_data.client.close()
+    return unloaded
 
 
 async def async_remove_entry(hass, entry):

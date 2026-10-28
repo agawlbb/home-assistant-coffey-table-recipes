@@ -54,12 +54,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 client = Client(async_get_clientsession(self.hass))
                 connection = await client.connect(self._identity, household["id"])
-                client.token = connection["token"]
+                client = Client(async_get_clientsession(self.hass), connection["token"])
                 try:
                     await client.read()
                 except ApiError:
                     await client.revoke()
                     raise
+                finally:
+                    await client.close()
                 data = {"household_id": household["id"], "token": connection["token"]}
                 self._identity = None
                 if self._reauth_entry:

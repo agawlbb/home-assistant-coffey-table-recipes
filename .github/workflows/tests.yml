@@ -17,6 +17,7 @@ jobs:
       - run: python scripts/check_ci_dependencies.py
       - run: python -m pip_audit --progress-spinner off
       - run: python -m unittest discover -s tests -p test_api.py -v
+      - run: python -m unittest discover -s tests -p test_shopping_socket.py -v
       - run: python -m unittest discover -s tests -p test_keep_engine.py -v
       - run: python -m unittest discover -s tests -p test_keep_adapter.py -v
       - run: python -m pytest tests/test_integration.py tests/test_keep_native.py tests/test_icloud_native.py -v

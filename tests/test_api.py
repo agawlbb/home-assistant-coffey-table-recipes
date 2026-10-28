@@ -113,7 +113,7 @@ class ClientTests(unittest.IsolatedAsyncioTestCase):
         session = Session()
         client = api.Client(session, "private-fixture-token")
         with self.assertRaises(api.ApiError) as error:
-            await client.request("GET", "/home-assistant/shopping-list")
+            await client.request("DELETE", "/home-assistant/connection")
         self.assertEqual(error.exception.status, 401)
         self.assertNotIn("private-fixture-token", str(error.exception))
         self.assertEqual(session.kwargs["headers"]["Authorization"], "Bearer private-fixture-token")

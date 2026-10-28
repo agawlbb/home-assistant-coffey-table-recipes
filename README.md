@@ -200,3 +200,23 @@ No app builds or private Firebase configuration belong in this repository.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Shopping WebSocket migration branch
+
+`migration/shopping-websocket` (base `aa5fc4f`) moves shopping traffic to
+`wss://ctr.coffeybean.com/shopping`. Account sign-in and integration credential
+management remain on inMotion. The backend migration branch must be deployed and
+its shared SQL credential import completed before installing this source.
+
+The integration maintains an authenticated household connection, immediately
+publishes pushed changes, and reconnects automatically. Its existing refresh
+interval also reconciles through that socket. The confirmed snapshot and pending
+receipt-backed changes persist in HA storage. Edits return after durable local
+storage; acknowledgements clear the outbox. Keep/iCloud verification reads still
+require successful remote readback. Pending edits survive HA restarts and lost
+responses; unrelated pushed changes do not undo local pending deletions.
+
+All three repositories remain on task branches until testing and user merge
+approval. This source push does not install or update a running HA instance.
+The backend repository's `docs/shopping-websocket-migration.md` contains the
+coordinated cutover and rollback procedure.

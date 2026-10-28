@@ -159,3 +159,24 @@ On JoeLaptop, Python 3.14.8 installed this environment successfully. The
 version/consistency checks and PNG/TIFF/JPEG round trips passed, as did all 35
 isolated API, Keep engine and adapter tests. Full HA pytest startup requires
 POSIX fcntl, unavailable on Windows; Linux CI supplies that runtime validation.
+
+## Shopping WebSocket migration — 2026-10-28
+
+Task branch: `migration/shopping-websocket`, based on `aa5fc4f`.
+
+Verified in the existing shared development container:
+
+- `python -m pytest -q --tb=short`: all 61 tests passed using the existing HA test
+  environment (Python 3.14). Lifecycle fixtures isolate external network access.
+- `python -m unittest discover -s tests -p test_api.py`: 10 passed.
+- `python -m unittest discover -s tests -p test_shopping_socket.py -v`: four passed,
+  including a real loopback WebSocket, durable offline deletion/restart/replay,
+  storage failure, and overlay of unrelated incoming additions.
+- The backend's `tests/shopping_websocket.py` passed all three tests with
+  `CTR_HA_SOURCE` pointing to this worktree. This includes the actual HA client
+  exchanging committed changes with the PHP WebSocket handler and simulated app.
+- Python compilation and `git diff --check` passed.
+
+No running Home Assistant installation was changed. Real-user sign-in, public
+TLS/WSS, hosted schema import, sync-journal transfer and production cutover remain
+pending. Source publication does not establish those results or authorize merging.
