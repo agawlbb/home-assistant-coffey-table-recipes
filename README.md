@@ -8,7 +8,7 @@ The list preserves each item's department and the app's department memory.
 
 ## Install
 
-Requires Home Assistant 2025.12 or later and internet access to coffeybean.com
+Requires Home Assistant 2025.12 or later and internet access to ctr.coffeybean.com
 and Google's Firebase Authentication service. This is a custom integration,
 not an official Home Assistant Core integration.
 

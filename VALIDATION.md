@@ -220,3 +220,48 @@ A manual `coffey_table_recipes.sync_google_keep` completed at 14:07:14 UTC with
 also confirmed zero-change synchronization. No CTR errors appeared in the
 post-restart system log. iCloud's last-success advanced after restart as well.
 No Flutter app build, app deployment, Core upgrade or OS upgrade was performed.
+
+
+## Remaining VPS migration
+
+Branch `feature/vps-remaining-php` starts at `7ad6e5e`. HTTP bootstrap, household
+selection, connection creation and revocation now use `https://ctr.coffeybean.com/api/v1`.
+The existing shopping WebSocket and durable outbox are unchanged. Transport tests
+cover the full Firebase-to-household-connection sequence without retaining personal
+credentials. API and socket unit tests and integration lifecycle tests pass in the
+development container. Installation was subsequently authorized; see below.
+
+## Installed VPS feature integration — 2026-10-31
+
+The user explicitly authorized updating the installed integration. HACS downloaded
+`feature/vps-remaining-php`, whose component source is commit
+`a3b9e093cae1bdb87f75e05b81b42ed71f4957cb`. Home Assistant restarted through the
+configuration-validating restart tool and the existing CTR config entry loaded.
+No config entry was removed/recreated. The household connection, Google Keep and
+iCloud list selections and 10-second scan interval were preserved; before/after
+option mappings compare equal.
+
+All 15 installed Python/JSON/YAML component files were read through the existing
+File editor app's read-only API and compared by SHA-256 with the feature checkout:
+zero mismatches. The actual installed `const.py` points to
+`https://ctr.coffeybean.com/api/v1`. HACS reports the feature branch installed.
+
+The shopping entity is available. Google Keep and iCloud both completed fresh
+post-restart synchronization with `synced`, zero changes and no error. Observed
+last-success times were 18:09:58 UTC for Keep and 18:10:11 UTC for iCloud. A filtered
+system-log read returned no CTR errors. No synthetic groceries were created and
+no personal credentials, list contents or HA storage files were read or committed.
+This verifies the existing connection after restart, not a fresh user sign-in.
+
+The HomeAssistant plugin and its best-practices guide were used for HACS,
+configuration-validating restart and live verification. No main merge, release,
+Home Assistant Core/OS upgrade or additional app build was performed.
+
+## Accepted main merge — 2026-10-31
+
+The user approved merging the remaining-PHP branches and removing them, while
+deferring the app release for AI dish chat and retaining the live InMotion backend.
+Before merging, all 15 installed component files were compared again by SHA-256
+with the accepted source: zero mismatches. API tests (11), shopping socket tests
+(4) and integration lifecycle tests (9) passed in the development container.
+HACS tracking is switched to main after publication, before branch removal.
