@@ -222,7 +222,7 @@ post-restart system log. iCloud's last-success advanced after restart as well.
 No Flutter app build, app deployment, Core upgrade or OS upgrade was performed.
 
 
-## Remaining VPS migration (source only)
+## Remaining VPS migration
 
 Branch `feature/vps-remaining-php` starts at `7ad6e5e`. HTTP bootstrap, household
 selection, connection creation and revocation now use `https://ctr.coffeybean.com/api/v1`.
@@ -256,3 +256,12 @@ This verifies the existing connection after restart, not a fresh user sign-in.
 The HomeAssistant plugin and its best-practices guide were used for HACS,
 configuration-validating restart and live verification. No main merge, release,
 Home Assistant Core/OS upgrade or additional app build was performed.
+
+## Accepted main merge — 2026-10-31
+
+The user approved merging the remaining-PHP branches and removing them, while
+deferring the app release for AI dish chat and retaining the live InMotion backend.
+Before merging, all 15 installed component files were compared again by SHA-256
+with the accepted source: zero mismatches. API tests (11), shopping socket tests
+(4) and integration lifecycle tests (9) passed in the development container.
+HACS tracking is switched to main after publication, before branch removal.
