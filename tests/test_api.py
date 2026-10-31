@@ -25,6 +25,26 @@ def snapshot(revision=1, items=None):
 
 
 class ClientTests(unittest.IsolatedAsyncioTestCase):
+    async def test_setup_and_revoke_use_vps_http_and_keep_identity_ephemeral(self):
+        client = api.Client(None)
+        client._http = AsyncMock(side_effect=[
+            {"api_key":"public-fixture"}, {"idToken":"identity-fixture"},
+            {"households":[{"id":"9"}]}, {"token":"ctrha_fixture"}, {"revoked":True}])
+        identity, households = await client.sign_in("user@example.test", "password-fixture")
+        await client.connect(identity, households[0]["id"])
+        client.token = "ctrha_fixture"
+        await client.request("DELETE", "/home-assistant/connection")
+        calls = client._http.call_args_list
+        self.assertEqual([c.args[1] for c in calls], [
+            "https://ctr.coffeybean.com/api/v1/home-assistant/auth-config",
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
+            "https://ctr.coffeybean.com/api/v1/households",
+            "https://ctr.coffeybean.com/api/v1/households/9/home-assistant-connections",
+            "https://ctr.coffeybean.com/api/v1/home-assistant/connection"])
+        self.assertEqual(calls[2].kwargs["headers"], {"Authorization":"Bearer identity-fixture"})
+        self.assertEqual(calls[4].kwargs["headers"], {"Authorization":"Bearer ctrha_fixture"})
+        self.assertFalse(hasattr(client, "password"))
+
     async def test_add_uses_local_state_without_waiting_for_a_remote_read(self):
         client = api.Client(None, "household-token")
         first = snapshot()

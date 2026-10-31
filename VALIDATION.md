@@ -220,3 +220,13 @@ A manual `coffey_table_recipes.sync_google_keep` completed at 14:07:14 UTC with
 also confirmed zero-change synchronization. No CTR errors appeared in the
 post-restart system log. iCloud's last-success advanced after restart as well.
 No Flutter app build, app deployment, Core upgrade or OS upgrade was performed.
+
+
+## Remaining VPS migration (source only)
+
+Branch `feature/vps-remaining-php` starts at `7ad6e5e`. HTTP bootstrap, household
+selection, connection creation and revocation now use `https://ctr.coffeybean.com/api/v1`.
+The existing shopping WebSocket and durable outbox are unchanged. Transport tests
+cover the full Firebase-to-household-connection sequence without retaining personal
+credentials. API and socket unit tests and integration lifecycle tests pass in the
+development container. No Home Assistant installation or restart was performed.
