@@ -191,3 +191,32 @@ shared credential hash was imported and verified. Public WSS authenticated read
 and open-connection revocation passed against the prepared VPS service and hosted
 database. The integration source is unchanged from the passing 61-test run; no
 running HA installation was updated.
+
+## Keep blank-separator recovery — 2026-10-31
+
+Live diagnosis found Keep synchronization `not_confirmed` with the error
+`List exceeds 1000 items or contains blank separators; sync stopped`.
+CTR's app-open requests reached Home Assistant, and iCloud synchronization
+continued succeeding. An adapter regression reproduced the failure when a
+blank, unpaired Keep row accompanied valid items.
+
+Repair `d53b633` leaves unpaired blank Keep rows untouched while synchronizing
+real items. A previously mapped item cleared to blank still blocks safely,
+preventing an inferred deletion of its CTR counterpart. The new regression
+failed before the fix. All 27 Keep engine/adapter unit tests and 22 native
+Keep/iCloud and integration lifecycle tests passed afterward.
+
+With explicit user installation approval, refreshed HACS repository information,
+downloaded the integration's main branch, and restarted Home Assistant through
+the configuration-validating restart tool. HACS confirmed installed commit
+`d53b633`; the CTR config entry loaded with its existing Keep/iCloud selections.
+Keep's startup reconciliation completed at 14:06:36 UTC with `synced`, no error,
+15 catch-up operations and 17 mapped items. Independent reads of Keep and CTR
+returned 17 items each with identical name/status multisets, including duplicate
+counts. No synthetic groceries were added for validation.
+
+A manual `coffey_table_recipes.sync_google_keep` completed at 14:07:14 UTC with
+`synced`, zero changes and no error. The subsequent automatic poll at 14:07:18 UTC
+also confirmed zero-change synchronization. No CTR errors appeared in the
+post-restart system log. iCloud's last-success advanced after restart as well.
+No Flutter app build, app deployment, Core upgrade or OS upgrade was performed.
