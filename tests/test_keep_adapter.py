@@ -83,6 +83,28 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
         ctr.change.assert_not_awaited()
         self.assertIsNone(result["last_success"])
 
+    async def test_blank_keep_separator_does_not_block_sync_or_get_deleted(self):
+        adapter, ctr, keep = self.make_adapter()
+        keep.api.fetch_all_lists.return_value[0].items.extend([
+            NS(id="blank", text="", checked=False, deleted=False),
+            NS(id="whitespace", text=" \n\t", checked=True, deleted=False),
+        ])
+        result = await adapter.sync("ctr_request")
+        self.assertEqual(result["status"], "synced")
+        self.assertEqual(len(adapter.state["rows"]), 1)
+        ctr.change.assert_not_awaited()
+        keep.api.async_delete_todo_item.assert_not_awaited()
+
+    async def test_cleared_mapped_keep_item_does_not_delete_ctr_item(self):
+        adapter, ctr, keep = self.make_adapter()
+        adapter.state = {"rows": [{"left": "c", "right": "k", "base": {
+            "summary": "Milk", "status": "needs_action"}}]}
+        keep.api.fetch_all_lists.return_value[0].items[0].text = ""
+        result = await adapter.sync("poll")
+        self.assertEqual(result["status"], "not_confirmed")
+        ctr.change.assert_not_awaited()
+        keep.api.async_delete_todo_item.assert_not_awaited()
+
     async def test_ctr_network_failure_cannot_look_like_empty_list(self):
         adapter, ctr, keep = self.make_adapter()
         ctr.client.read.side_effect = ConnectionError()

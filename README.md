@@ -118,7 +118,17 @@ departments and ordering remain under CTR's control. The first synchronization
 merges both lists without treating unpaired items as deletions. Later deletions
 propagate only when the counterpart has not been edited concurrently. Independent
 field edits merge; CTR wins simultaneous conflicts on the same field. List order
-and blank Keep separator rows are not synchronized.
+and blank Keep separator rows are not synchronized. Unpaired blank Keep rows
+are left untouched and do not block other items. If a previously synchronized
+Keep item is cleared to blank, synchronization stops until its text is restored,
+so clearing text cannot silently delete its CTR counterpart.
+
+Blank-separator regression validation (2026-10-31): the new unpaired-blank test
+reproduced `not_confirmed` before the fix. After the fix, 27 Keep engine/adapter
+unit tests and 22 native Keep/iCloud and integration lifecycle tests passed.
+The paired-blank regression verifies that a cleared mapped item cannot delete
+its CTR counterpart. Live installation and resumed synchronization still require
+verification; these tests use mocked remote lists.
 
 Opening CTR's shopping list generates its existing household request. CTR handles
 the resulting `coffey_table_recipes_shopping_list_sync_requested` event internally,

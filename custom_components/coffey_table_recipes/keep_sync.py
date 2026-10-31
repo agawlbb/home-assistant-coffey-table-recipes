@@ -191,15 +191,19 @@ class KeepSync:
         async with ctr._snapshot_lock:
             snapshot = await ctr.client.read()
             ctr.async_set_updated_data(ctr.accept(snapshot))
+        keep_items = [item for item in keep_list.items if not getattr(item, "deleted", False)]
+        mapped_keep_ids = {row.get("right") for row in (self.state or {}).get("rows", [])}
+        if any(item.id in mapped_keep_ids and not item.text.strip() for item in keep_items):
+            raise SyncBlocked("A previously synchronized Keep item is blank; restore its text before syncing")
         result = {
             "left": {item["id"]: {"summary": item["name"], "status": "completed" if item["checked"] else "needs_action"}
                      for item in snapshot["items"]},
             "right": {item.id: {"summary": item.text, "status": "completed" if item.checked else "needs_action"}
-                      for item in keep_list.items if not getattr(item, "deleted", False)},
+                      for item in keep_items if item.text.strip()},
         }
         for side in result.values():
             if len(side) > 1000 or any(not item["summary"].strip() for item in side.values()):
-                raise SyncBlocked("List exceeds 1000 items or contains blank separators; sync stopped")
+                raise SyncBlocked("List exceeds 1000 items or contains a blank shopping item; sync stopped")
         # Re-publish only after a successful remote read, so HA's Keep card reflects
         # this sync without waiting for the upstream 15-minute polling interval.
         selected = keep.config_entry.data.get("lists_to_sync", [])
