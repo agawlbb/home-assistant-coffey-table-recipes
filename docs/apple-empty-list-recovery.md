@@ -21,5 +21,17 @@ Validation: `python3 -m unittest discover -s tests -p test_keep_engine.py -v`
 passed all 18 focused engine tests, including recovery after clearing both lists,
 subsequent propagation of a new item, failed-read preservation, and existing
 uncertain-add/duplicate protections. `git diff --check` passed. No full suite or
-app build ran. Live synchronization remains unverified until this source change
-is installed in Home Assistant. Main integration requires owner approval.
+app build ran.
+
+Owner-approved main integration and installation completed on 2026-11-08.
+Marketplace confirmed installed commit `00c6f25` after Home Assistant restarted.
+A fresh `coffey_table_recipes.sync_icloud` call at 13:53 EST returned `synced`,
+zero changes and no error; the sensor confirmed zero mapped items and the Apple
+Groceries entity remained at zero items. This verifies empty-list recovery live;
+new-item propagation was exercised in focused tests, not against personal lists.
+
+Installation initially failed because Marketplace warning acceptance is per HA
+user. The connection uses a separate HA-MCP Server account. After explicit owner
+approval, the supported `marketplace/warning/accept` API recorded its one-time
+acceptance. `marketplace/info` confirmed `warning_accepted: true` before and after
+restart. This removes that recurring installation blocker for this account.
