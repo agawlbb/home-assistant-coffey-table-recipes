@@ -181,6 +181,35 @@ class EngineTests(unittest.IsolatedAsyncioTestCase):
             await r.run()
         self.assertEqual(len(r.calls), 1)
 
+    async def test_clearing_both_lists_retires_uncertain_add_and_sync_resumes(self):
+        for failure in ("before", "after"):
+            with self.subTest(failure=failure):
+                r = Remote({"c": item()})
+                r.failure = failure
+                with self.assertRaises(ConnectionError):
+                    await r.run()
+                r.failure = None
+                r.data = {"left": {}, "right": {}}
+                r.calls.clear()
+                await r.run()
+                self.assertEqual(r.saved["rows"], [])
+                self.assertEqual(r.calls, [])
+                r.data["left"]["fresh"] = item("Eggs")
+                await r.run()
+                self.assertEqual(list(r.data["right"].values()), [item("Eggs")])
+
+    async def test_failed_read_of_cleared_lists_preserves_uncertain_add(self):
+        r = Remote({"c": item()})
+        r.failure = "before"
+        with self.assertRaises(ConnectionError):
+            await r.run()
+        saved = deepcopy(r.saved)
+        r.data = {"left": {}, "right": {}}
+        r.fail_read = True
+        with self.assertRaises(ConnectionError):
+            await r.run()
+        self.assertEqual(r.saved, saved)
+
     async def test_ack_without_effect_not_confirmed(self):
         r = Remote({"c": item()}, {"k": item()})
         await r.run()

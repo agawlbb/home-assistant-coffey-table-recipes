@@ -75,6 +75,12 @@ class Engine:
 
     async def run(self):
         snapshots = await self.read()  # Must be fresh, available, complete on BOTH sides.
+        # Neither side retains an item to reconcile. Retire old mappings and
+        # uncertain additions rather than letting a cleared list stay blocked.
+        if not snapshots["left"] and not snapshots["right"]:
+            self.state["rows"] = []
+            await self.persist()
+            return 0
         for row in self.state["rows"]:
             snapshots = await self.recover(row, snapshots)
 

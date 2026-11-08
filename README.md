@@ -186,6 +186,10 @@ Failed refreshes, a missing list, or unreadable encrypted reminders stop the run
 without treating cached/partial results as deletions. Approve Apple access on an
 Apple device if the status reports an encryption problem.
 
+When fresh, complete reads confirm that both lists are empty, old item mappings
+and uncertain additions are retired. This lets synchronization resume after both
+lists have been cleared without replaying an old addition.
+
 The **Apple iCloud synchronization** sensor reports `disabled`, `syncing`, `synced`
 or `not_confirmed`, with the last successful sync, error and mapped item count.
 The `coffey_table_recipes.sync_icloud` action requests a fresh sync; specify
