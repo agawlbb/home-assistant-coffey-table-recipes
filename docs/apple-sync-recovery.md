@@ -37,3 +37,13 @@ suite, app build, main integration, or Home Assistant installation ran.
 
 The push workflow normally runs the complete integration suite, so the task
 commit uses `[skip ci]` to preserve the owner's focused-validation requirement.
+
+Owner-approved main integration and installation completed on 2026-11-09.
+Marketplace confirmed installed commit `05b5edf` with no pending upgrade after
+the Home Assistant restart. Startup sync at 21:35:37 UTC recovered automatically:
+`synced`, no error, zero changes and one mapped item. A fresh manual Apple sync
+at 21:36:35 UTC again returned `synced`, zero changes and no error. Both live lists
+read back with only Protein drinks, still incomplete. The persistent-notification
+API returned no notifications. These checks verify recovery and matching current
+contents; no synthetic changes were made to personal lists. Error notification
+creation/deduplication/clearing was verified in the focused HA tests.
