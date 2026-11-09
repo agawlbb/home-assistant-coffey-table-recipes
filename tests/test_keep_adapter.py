@@ -25,6 +25,7 @@ def mark_callback(function):
 fake_modules = {
     "voluptuous": stub("voluptuous"),
     "homeassistant": stub("homeassistant"),
+    "homeassistant.components": stub("homeassistant.components", persistent_notification=NS(async_create=Mock(), async_dismiss=Mock())),
     "homeassistant.const": stub("homeassistant.const", Platform=NS(SENSOR="sensor")),
     "homeassistant.core": stub("homeassistant.core", SupportsResponse=NS(OPTIONAL="optional"), callback=mark_callback),
     "homeassistant.exceptions": stub("homeassistant.exceptions", HomeAssistantError=HAError),

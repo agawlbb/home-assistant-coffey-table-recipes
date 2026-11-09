@@ -10,6 +10,7 @@ from datetime import timedelta
 import logging
 
 import voluptuous as vol
+from homeassistant.components import persistent_notification
 from homeassistant.core import SupportsResponse, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
@@ -294,6 +295,19 @@ class KeepSync:
             except Exception:
                 self.status, self.last_success = "not_confirmed", previous_success
                 self.last_error = "Synchronization status could not be saved"
+            notification_id = f"{DOMAIN}_sync_{self.entry.entry_id}_{type(self).__name__}"
+            if self.status == "synced":
+                persistent_notification.async_dismiss(self.hass, notification_id)
+            else:
+                source_name = "Apple Reminders" if "icloud_entry" in self.selection else "Google Keep"
+                persistent_notification.async_create(
+                    self.hass,
+                    f"Shopping-list sync with {source_name} is paused. "
+                    f"{self.last_error}. Changes have not been confirmed on both lists. "
+                    "Sync will retry automatically.",
+                    title="Shopping-list sync needs attention",
+                    notification_id=notification_id,
+                )
             self.publish()
             return {"status": self.status, "changes": self.changes,
                     "last_success": self.last_success, "error": self.last_error}

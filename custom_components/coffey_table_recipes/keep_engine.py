@@ -54,6 +54,14 @@ class Engine:
         known = pending.get("uid")
         if known is not None:
             candidates = [known] if known in snapshots[side] else []
+        source = "right" if side == "left" else "left"
+        if not candidates and row.get(source) not in snapshots[source]:
+            # The source was removed while its addition was unconfirmed, and
+            # a fresh complete read finds no counterpart. Nothing remains to
+            # copy or delete; do not let this obsolete intent block other items.
+            self.state["rows"].remove(row)
+            await self.persist()
+            return snapshots
         if len(candidates) != 1:
             raise SyncBlocked("An earlier add has an uncertain outcome; no add was replayed")
         uid = candidates[0]
@@ -69,6 +77,8 @@ class Engine:
         if snapshots[side].get(uid) != target:
             raise SyncBlocked("An addition could not be verified")
         row[side] = uid
+        if row["base"] is None:
+            row["base"] = deepcopy(target)
         row.pop("pending")
         await self.persist()
         return snapshots
@@ -81,7 +91,7 @@ class Engine:
             self.state["rows"] = []
             await self.persist()
             return 0
-        for row in self.state["rows"]:
+        for row in list(self.state["rows"]):
             snapshots = await self.recover(row, snapshots)
 
         # Pair newly encountered items one-to-one, preserving duplicate counts.

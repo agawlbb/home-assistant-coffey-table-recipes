@@ -198,6 +198,37 @@ class EngineTests(unittest.IsolatedAsyncioTestCase):
                 await r.run()
                 self.assertEqual(list(r.data["right"].values()), [item("Eggs")])
 
+    async def test_removed_uncertain_add_does_not_block_remaining_items(self):
+        for source in ("left", "right"):
+            for failure in ("before", "after"):
+                with self.subTest(source=source, failure=failure):
+                    r = Remote()
+                    r.data[source]["obsolete"] = item("Yogurt")
+                    r.failure = failure
+                    with self.assertRaises(ConnectionError):
+                        await r.run()
+                    r.failure = None
+                    r.data = {"left": {"c": item("Protein drinks")},
+                              "right": {"k": item("Protein drinks")}}
+                    r.calls.clear()
+                    await r.run()
+                    self.assertEqual(r.calls, [])
+                    self.assertEqual(len(r.saved["rows"]), 1)
+                    r.data["left"]["c"]["status"] = "completed"
+                    await r.run()
+                    self.assertEqual(r.data["right"]["k"]["status"], "completed")
+
+    async def test_removed_source_with_confirmed_add_propagates_deletion(self):
+        r = Remote({"c": item("Yogurt")})
+        r.failure = "after"
+        with self.assertRaises(ConnectionError):
+            await r.run()
+        r.failure = None
+        r.data["left"].clear()
+        r.data["left"]["p"] = item("Protein drinks")
+        await r.run()
+        self.assertEqual(list(r.data["right"].values()), [item("Protein drinks")])
+
     async def test_failed_read_of_cleared_lists_preserves_uncertain_add(self):
         r = Remote({"c": item()})
         r.failure = "before"

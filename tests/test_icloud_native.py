@@ -8,6 +8,7 @@ import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
+from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry, MockModule, mock_integration, async_fire_time_changed
 
 from custom_components.coffey_table_recipes.const import DOMAIN, EVENT_SYNC_REQUESTED, EVENT_CHANGED
@@ -139,3 +140,31 @@ async def test_bidirectional_engine_writes_keep_ctr_department(hass, apple):
         assert result["status"] == "synced", result
         change.assert_awaited_once()
         assert (await entry.runtime_data.client.read())["items"][0]["department"] == "Dairy"
+
+
+async def test_sync_failure_notification_clears_after_recovery(hass, apple, hass_ws_client):
+    entry, _, remote, _ = apple
+    sync = entry.runtime_data.icloud_sync
+    assert await async_setup_component(hass, "persistent_notification", {})
+    client = await hass_ws_client(hass)
+    request_id = 0
+
+    async def notifications():
+        nonlocal request_id
+        request_id += 1
+        await client.send_json({"id": request_id, "type": "persistent_notification/get"})
+        response = await client.receive_json()
+        assert response["success"]
+        return response["result"]
+
+    remote.last_update_success = False
+    await sync.sync("poll")
+    messages = await notifications()
+    assert len(messages) == 1
+    assert "Could not fetch fresh iCloud reminders" in messages[0]["message"]
+    await sync.sync("poll")
+    assert len(await notifications()) == 1
+
+    remote.last_update_success = True
+    assert (await sync.sync("poll"))["status"] == "synced"
+    assert await notifications() == []
