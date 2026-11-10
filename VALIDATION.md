@@ -281,3 +281,31 @@ Three unchanged shopping socket checks also passed in the initial focused run.
 No complete suite, running HA installation, production calendar, or deployment
 was used. Source commits use `[skip ci]` to avoid the existing full-suite push
 workflow; no build, installation or release is triggered.
+
+
+## Authorized work calendar installation — 2026-11-10
+
+The owner requested backend setup, HA installation and a temporary Android APK.
+HACS refreshed repository information and downloaded `feat/work-calendar` at
+`d8ffc96a0bbda99e835ff6f6c003050e92fd6d2a`. All 16 Python/JSON/YAML component
+files were read via File editor's read-only API under `/homeassistant` and compared
+with the task checkout: zero differences. The `/config` alias is outside File
+editor's enforced base path on this instance; no access settings were changed.
+Home Assistant 2026.11.0 restarted via the configuration-validating restart tool;
+CTR returned loaded and its options schema included Work calendar.
+
+Selected `calendar.joe_s_work_schedule_work_calendar` via the existing options
+flow. Before/after comparison retained the Google Keep and iCloud selections and
+10-second refresh interval. A native read of the selected calendar returned nine
+all-day events; their occupied dates exactly matched the nine dates read from the
+new backend table through its normal runtime database identity. The stored default
+color is amber. No calendar events or synthetic shopping/meal data were created.
+A filtered HA system log read returned no CTR errors after restart and selection.
+This verifies real HA-to-backend delivery; editing/deletion behavior was covered
+by the focused fixtures, not by changing the owner's production events.
+
+The HomeAssistant plugin and its
+[best-practices skill](skill://home-assistant-best-practices/SKILL.md) were used for
+HACS, the validating restart, options and verification. No Core/OS upgrade, main
+integration, full suite or release was performed. The prior main source remains
+the source rollback; existing HA configuration/data was retained.
