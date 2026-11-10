@@ -8,6 +8,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .api import ApiError, Client
+from .work_calendar import async_setup_work_calendar
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, EVENT_CHANGED, EVENT_SYNC_REQUESTED
 from .keep_sync import async_register_keep_service, async_setup_keep_sync, async_stop_keep_sync
 from .icloud_sync import async_register_icloud_service, async_setup_icloud_sync, async_stop_icloud_sync
@@ -95,6 +96,7 @@ async def async_setup_entry(hass, entry):
     coordinator.client.socket.start()
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await async_setup_work_calendar(hass, entry)
     await async_setup_keep_sync(hass, entry)
     await async_setup_icloud_sync(hass, entry)
     async_register_keep_service(hass)

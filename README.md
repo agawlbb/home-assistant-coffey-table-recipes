@@ -233,3 +233,23 @@ All three repositories remain on task branches until testing and user merge
 approval. This source push does not install or update a running HA instance.
 The backend repository separates `inmotion/` and `vps/` source, with one copy command
 for each server. Setup and credential import do not run during routine deployment.
+
+## Work calendar
+
+Select an optional **Work calendar** in the CTR integration options. Every event
+marks its occupied dates in CTR's meal planner, regardless of title. All-day ends
+and timed ends are exclusive; timed events use Home Assistant's local timezone.
+Only dates are sent to CTR. Choose the household's **Workday color** in CTR
+Settings; the planner shows a color bar with no label or tooltip.
+
+Calendar event subscriptions and entity state changes request a refresh; a
+60-second fallback poll catches other edits and retries connection failures. Your
+source calendar integration may take longer to discover remote edits. Successful
+refreshes replace the dates, including removals. Unavailable calendars preserve
+the last successful dates. Clear the selection to remove markers. The rolling
+window covers 366 days before today through 730 days after today.
+
+This requires the companion CTR backend and app calendar changes. Apply the
+backend's explicit one-time `bin/work-calendar.sql` setup before deploying its
+source. Installing this source into a running HA instance is a separate rollout
+step. Task branch `feat/work-calendar` starts at `73f5a3a`; main integration is pending.

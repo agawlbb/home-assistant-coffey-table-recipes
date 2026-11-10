@@ -96,7 +96,7 @@ class OptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         errors = {}
         if user_input is not None:
-            options = {"scan_interval": user_input["scan_interval"]}
+            options = {"scan_interval": user_input["scan_interval"], "work_calendar": user_input.get("work_calendar")}
             entity_id = user_input.get(CONF_KEEP_LIST)
             try:
                 if entity_id:
@@ -117,6 +117,8 @@ class OptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(step_id="init", data_schema=vol.Schema({
             vol.Required("scan_interval", default=self.config_entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL)):
                 vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
+            vol.Optional("work_calendar", default=self.config_entry.options.get("work_calendar")): vol.Any(None, selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="calendar"))),
             vol.Optional(CONF_KEEP_LIST, default=selected): vol.Any(None, selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="todo", integration="google_keep_sync"))),
             vol.Optional(CONF_ICLOUD_LIST, default=apple_selected): vol.Any(None, selector.EntitySelector(

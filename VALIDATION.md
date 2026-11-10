@@ -265,3 +265,19 @@ Before merging, all 15 installed component files were compared again by SHA-256
 with the accepted source: zero mismatches. API tests (11), shopping socket tests
 (4) and integration lifecycle tests (9) passed in the development container.
 HACS tracking is switched to main after publication, before branch removal.
+
+
+## Work calendar task (2026-11-10)
+
+Base `73f5a3a`, task branch `feat/work-calendar`. Four new calendar checks cover
+arbitrary titles, all-day/timed/overnight boundaries and timezone conversion,
+subscription/state/poll-driven replacement and deletion, unavailable calendar
+preservation, unload cleanup, selecting/clearing the option, and clearing markers.
+These four checks plus the modified real loopback WebSocket transport test passed
+(`pytest -q tests/test_work_calendar.py tests/test_shopping_socket.py -k
+'work_calendar or transport_authenticates'`: 5 passed, 3 deselected). The existing
+options check passed earlier with the calendar checks (3 passed, 8 deselected).
+Three unchanged shopping socket checks also passed in the initial focused run.
+No complete suite, running HA installation, production calendar, or deployment
+was used. Source commits use `[skip ci]` to avoid the existing full-suite push
+workflow; no build, installation or release is triggered.

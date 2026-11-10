@@ -76,6 +76,7 @@ class ShoppingSocketTests(unittest.IsolatedAsyncioTestCase):
         await client.close()
 
     async def test_transport_authenticates_and_delivers_push_without_polling(self):
+        messages = []
         pushed = asyncio.Event()
         peer = asyncio.get_running_loop().create_future()
         async def handler(request):
@@ -90,6 +91,7 @@ class ShoppingSocketTests(unittest.IsolatedAsyncioTestCase):
                 import json
                 message = json.loads(frame.data)
                 if message["type"] == "request":
+                    messages.append(message)
                     await ws.send_json({"type": "response", "id": message["id"], "data": snapshot()})
             return ws
         app = web.Application()
@@ -106,6 +108,9 @@ class ShoppingSocketTests(unittest.IsolatedAsyncioTestCase):
             socket = api.ShoppingSocket(session, "fixture", receive, url=f"http://127.0.0.1:{port}/shopping")
             try:
                 self.assertEqual((await socket.request())["revision"], 1)
+                await socket.request({"dates": ["2026-11-10"]}, resource="work-calendar")
+                self.assertEqual(messages[-1]["path"], "/households/1/work-calendar")
+                self.assertEqual(messages[-1]["body"], {"dates": ["2026-11-10"]})
                 await (await peer).send_json({"type": "snapshot", "household_id": "1", "data": snapshot(2, [])})
                 await asyncio.wait_for(pushed.wait(), 2)
                 self.assertTrue(socket.ready.is_set())

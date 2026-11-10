@@ -98,7 +98,7 @@ class ShoppingSocket:
             await asyncio.sleep(25)
             await ws.send_json({"v": 1, "type": "ping"})
 
-    async def request(self, body=None):
+    async def request(self, body=None, *, resource="shopping-list"):
         self.start()
         try:
             await asyncio.wait_for(self.ready.wait(), 20)
@@ -109,7 +109,7 @@ class ShoppingSocket:
             self.pending[uid] = future
             try:
                 await self.ws.send_json({"v": 1, "type": "request", "id": uid,
-                                         "path": f"/households/{self.household}/shopping-list",
+                                         "path": f"/households/{self.household}/{resource}",
                                          **({"body": body} if body is not None else {})})
                 return await asyncio.wait_for(future, 20)
             finally:

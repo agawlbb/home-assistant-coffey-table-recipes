@@ -34,12 +34,13 @@
   "options": {
     "step": {
       "init": {
-        "title": "Shopping list settings",
+        "title": "CTR integration settings",
         "description": "Check CTR every 5–300 seconds. Optionally choose Google Keep and/or Apple iCloud lists for two-way additions, renames, checkmarks and deletions. Authentication stays in each existing integration. External lists are checked every 60 seconds and for CTR sync requests and HA edits. Clear a selection to stop syncing that list. The first sync merges both lists; later deletions propagate.",
         "data": {
           "scan_interval": "CTR refresh interval (seconds)",
           "google_keep_list": "Google Keep Sync list (optional)",
-          "icloud_list": "Apple iCloud shopping list (optional)"
+          "icloud_list": "Apple iCloud shopping list (optional)",
+          "work_calendar": "Work calendar (optional)"
         }
       }
     },
